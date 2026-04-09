@@ -1,0 +1,15 @@
+id: website-launch
+name: Website Launch
+goal: Produzir um website ou landing page com base num briefing e brand context.
+primary_agents:
+  - orchestrator
+  - strategy
+  - copy
+  - design
+  - web
+  - qa
+artifacts:
+  - sitemap.md
+  - copy-deck.md
+  - wireframe.md
+  - implementation-notes.md

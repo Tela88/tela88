@@ -1,0 +1,22 @@
+id: client-onboarding
+steps:
+  - id: collect-brief
+    type: intake
+    agent: orchestrator
+    output: artifacts/brief.md
+  - id: structure-client-context
+    type: agent
+    agent: strategy
+    output: artifacts/client-profile.md
+  - id: research-market
+    type: agent
+    agent: research
+    output: artifacts/research-summary.md
+  - id: create-action-plan
+    type: agent
+    agent: strategy
+    output: artifacts/action-plan.md
+  - id: final-review
+    type: qa
+    agent: qa
+    output: artifacts/review.md

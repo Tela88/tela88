@@ -1,0 +1,26 @@
+id: paid-acquisition
+steps:
+  - id: normalize-offer
+    type: intake
+    agent: orchestrator
+    output: artifacts/brief.md
+  - id: define-campaign-strategy
+    type: agent
+    agent: strategy
+    output: artifacts/campaign-brief.md
+  - id: generate-ad-angles
+    type: agent
+    agent: ads
+    output: artifacts/angle-matrix.md
+  - id: write-ad-copy
+    type: agent
+    agent: copy
+    output: artifacts/ad-copy.md
+  - id: create-creative-directions
+    type: agent
+    agent: design
+    output: artifacts/creative-directions.md
+  - id: final-review
+    type: qa
+    agent: qa
+    output: artifacts/review.md

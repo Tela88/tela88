@@ -1,0 +1,26 @@
+id: social-monthly
+steps:
+  - id: define-goals
+    type: intake
+    agent: orchestrator
+    output: artifacts/brief.md
+  - id: monthly-direction
+    type: agent
+    agent: strategy
+    output: artifacts/monthly-strategy.md
+  - id: build-calendar
+    type: agent
+    agent: social
+    output: artifacts/content-calendar.md
+  - id: write-post-briefs
+    type: agent
+    agent: copy
+    output: artifacts/post-briefs.md
+  - id: propose-creative-system
+    type: agent
+    agent: design
+    output: artifacts/creative-directions.md
+  - id: final-review
+    type: qa
+    agent: qa
+    output: artifacts/review.md

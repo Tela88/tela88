@@ -1,0 +1,30 @@
+id: content-engine
+steps:
+  - id: define-topic
+    type: intake
+    agent: orchestrator
+    output: artifacts/brief.md
+  - id: gather-insights
+    type: agent
+    agent: research
+    output: artifacts/insights.md
+  - id: create-angles
+    type: agent
+    agent: copy
+    output: artifacts/angle-list.md
+  - id: write-draft
+    type: agent
+    agent: copy
+    output: artifacts/draft.md
+  - id: propose-visuals
+    type: agent
+    agent: design
+    output: artifacts/visual-directions.md
+  - id: optimize-distribution
+    type: agent
+    agent: seo
+    output: artifacts/distribution-notes.md
+  - id: final-review
+    type: qa
+    agent: qa
+    output: artifacts/review.md

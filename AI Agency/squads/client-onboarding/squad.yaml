@@ -1,0 +1,13 @@
+id: client-onboarding
+name: Client Onboarding
+goal: Transformar um novo cliente num pacote operativo pronto para produção.
+primary_agents:
+  - orchestrator
+  - strategy
+  - research
+  - qa
+artifacts:
+  - client-profile.md
+  - brand-brief.md
+  - offer-summary.md
+  - action-plan.md

@@ -1,0 +1,15 @@
+id: content-engine
+name: Content Engine
+goal: Produzir conteúdos de topo de funil e meio de funil de forma consistente.
+primary_agents:
+  - orchestrator
+  - research
+  - copy
+  - design
+  - seo
+  - qa
+artifacts:
+  - angle-list.md
+  - content-brief.md
+  - draft.md
+  - visual-directions.md

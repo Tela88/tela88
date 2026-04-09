@@ -1,0 +1,15 @@
+id: social-monthly
+name: Social Monthly
+goal: Produzir um plano mensal de conteúdos com execução consistente.
+primary_agents:
+  - orchestrator
+  - strategy
+  - social
+  - copy
+  - design
+  - qa
+artifacts:
+  - monthly-strategy.md
+  - content-calendar.md
+  - post-briefs.md
+  - creative-directions.md

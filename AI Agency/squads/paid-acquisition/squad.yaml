@@ -1,0 +1,15 @@
+id: paid-acquisition
+name: Paid Acquisition
+goal: Desenhar e preparar campanhas pagas com oferta, ângulos e criativos.
+primary_agents:
+  - orchestrator
+  - strategy
+  - copy
+  - design
+  - ads
+  - qa
+artifacts:
+  - campaign-brief.md
+  - angle-matrix.md
+  - ad-copy.md
+  - creative-directions.md

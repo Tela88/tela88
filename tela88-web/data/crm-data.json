@@ -1,0 +1,263 @@
+{
+  "requests": [
+    {
+      "id": "req-pending-001",
+      "name": "João Ferreira",
+      "email": "joao@ateliernorte.pt",
+      "company": "Atelier Norte",
+      "revenue": "Até €5.000/mês",
+      "challenge": "Estamos a publicar nas redes sociais, mas quase ninguém pede orçamento. Precisamos de perceber se o problema é a mensagem, o site ou os anúncios.",
+      "focusArea": "visibilidade",
+      "createdAt": "2026-04-07T15:40:00.000Z",
+      "status": "pending",
+      "scheduledAt": null,
+      "internalNotes": "",
+      "clientId": null
+    },
+    {
+      "id": "req-scheduled-001",
+      "name": "Marta Silva",
+      "email": "marta@casadolargo.pt",
+      "company": "Casa do Largo",
+      "revenue": "€5.000 – €20.000/mês",
+      "challenge": "Temos boa ocupação no verão, mas no resto do ano as reservas caem muito. Queremos melhorar o website e captar mais contactos diretos.",
+      "focusArea": "conversao",
+      "createdAt": "2026-04-08T08:15:00.000Z",
+      "status": "agendado",
+      "scheduledAt": "2026-04-15T10:00",
+      "internalNotes": "Lead com bom fit para alojamento local.",
+      "clientId": null
+    },
+    {
+      "id": "req-attended-001",
+      "name": "Ricardo Lopes",
+      "email": "ricardo@hostalfama.com",
+      "company": "Host Alfama",
+      "revenue": "€20.000 – €50.000/mês",
+      "challenge": "Queremos aumentar reservas diretas e depender menos das OTAs. Também precisamos de automatizar respostas e acompanhamento dos hóspedes.",
+      "focusArea": "retencao",
+      "createdAt": "2026-04-07T10:05:00.000Z",
+      "status": "atendido",
+      "scheduledAt": "2026-04-10T14:00",
+      "internalNotes": "Reunião feita. Demonstrou interesse em pack de retenção e automação.",
+      "clientId": null
+    },
+    {
+      "id": "req-client-001",
+      "name": "Inês Cardoso",
+      "email": "ines@clinicavera.pt",
+      "company": "Clínica Vera",
+      "revenue": "Mais de €50.000/mês",
+      "challenge": "Temos tráfego, mas a maior parte dos visitantes não marca consulta. Queremos uma análise ao funil e ao processo de marcação.",
+      "focusArea": "trafego",
+      "createdAt": "2026-04-06T17:20:00.000Z",
+      "status": "cliente",
+      "scheduledAt": "2026-04-18T11:00",
+      "internalNotes": "Prioridade alta em captação e marcações. Rever landing principal e calendário de anúncios.",
+      "clientId": "client-001"
+    },
+    {
+      "id": "req-client-002",
+      "name": "Duarte Reis",
+      "email": "duarte@vilamar.pt",
+      "company": "Vila Mar Apartments",
+      "revenue": "€20.000 – €50.000/mês",
+      "challenge": "Queremos um sistema para gerar mais reservas diretas e acompanhar os leads do website sem depender só das plataformas.",
+      "focusArea": "conversao",
+      "createdAt": "2026-04-05T11:15:00.000Z",
+      "status": "cliente",
+      "scheduledAt": "2026-04-09T16:00",
+      "internalNotes": "Já validou budget para website, CRM e anúncios.",
+      "clientId": "client-002"
+    }
+  ],
+  "clients": [
+    {
+      "id": "client-001",
+      "requestId": "req-client-001",
+      "name": "Inês Cardoso",
+      "email": "ines@clinicavera.pt",
+      "company": "Clínica Vera",
+      "revenue": "Mais de €50.000/mês",
+      "challenge": "Temos tráfego, mas a maior parte dos visitantes não marca consulta. Queremos uma análise ao funil e ao processo de marcação.",
+      "focusArea": "trafego",
+      "createdAt": "2026-04-07T12:30:00.000Z",
+      "scheduledAt": "2026-04-18T11:00",
+      "clientStage": "em-producao",
+      "packName": "Pack Performance Clínica",
+      "packDescription": "Estrutura focada em aquisição, funil e acompanhamento mensal das campanhas.",
+      "setupFee": "€1.200",
+      "monthlyFee": "€850/mês",
+      "services": [
+        {
+          "id": "anuncios-trafego-organico",
+          "stage": "em-producao"
+        },
+        {
+          "id": "funis-conversao",
+          "stage": "em-processo"
+        },
+        {
+          "id": "consultoria-marketing",
+          "stage": "planeado"
+        }
+      ],
+      "internalNotes": "Prioridade alta em captação e marcações. Rever landing principal e calendário de anúncios."
+    },
+    {
+      "id": "client-002",
+      "requestId": "req-client-002",
+      "name": "Duarte Reis",
+      "email": "duarte@vilamar.pt",
+      "company": "Vila Mar Apartments",
+      "revenue": "€20.000 – €50.000/mês",
+      "challenge": "Queremos um sistema para gerar mais reservas diretas e acompanhar os leads do website sem depender só das plataformas.",
+      "focusArea": "conversao",
+      "createdAt": "2026-04-06T14:10:00.000Z",
+      "scheduledAt": "2026-04-16T16:00",
+      "clientStage": "em-processo",
+      "packName": "Pack Reservas Diretas",
+      "packDescription": "Website, CRM e estrutura de aquisição para aumentar reservas diretas.",
+      "setupFee": "€2.500",
+      "monthlyFee": "€1.100/mês",
+      "services": [
+        {
+          "id": "websites-crm",
+          "stage": "em-processo"
+        },
+        {
+          "id": "funis-conversao",
+          "stage": "planeado"
+        },
+        {
+          "id": "anuncios-trafego-organico",
+          "stage": "planeado"
+        }
+      ],
+      "internalNotes": "A organizar onboarding, acessos e levantamento técnico do website atual."
+    },
+    {
+      "id": "client-003",
+      "requestId": "seed-client-003",
+      "name": "Beatriz Nunes",
+      "email": "beatriz@atelierbravo.pt",
+      "company": "Atelier Bravo",
+      "revenue": "Até €5.000/mês",
+      "challenge": "Precisamos de presença mais consistente e melhor imagem nas redes para gerar mais pedidos.",
+      "focusArea": "visibilidade",
+      "createdAt": "2026-04-04T09:00:00.000Z",
+      "scheduledAt": null,
+      "clientStage": "em-producao",
+      "packName": "Pack Presença Social",
+      "packDescription": "Gestão mensal de social, design e acompanhamento estratégico.",
+      "setupFee": "€600",
+      "monthlyFee": "€450/mês",
+      "services": [
+        {
+          "id": "gestao-redes-sociais",
+          "stage": "em-producao"
+        },
+        {
+          "id": "design-grafico",
+          "stage": "em-producao"
+        },
+        {
+          "id": "consultoria-marketing",
+          "stage": "concluido"
+        }
+      ],
+      "internalNotes": "Cliente em manutenção mensal de social e direção visual."
+    }
+  ],
+  "teamMembers": [
+    {
+      "id": "team-001",
+      "name": "Mariana Costa",
+      "role": "GestÃ£o de projeto",
+      "status": "disponivel",
+      "dailyCapacity": "5h livres hoje"
+    },
+    {
+      "id": "team-002",
+      "name": "Pedro Martins",
+      "role": "Paid media",
+      "status": "ocupado",
+      "dailyCapacity": "2h livres hoje"
+    },
+    {
+      "id": "team-003",
+      "name": "Sofia Almeida",
+      "role": "Design e social",
+      "status": "disponivel",
+      "dailyCapacity": "4h livres hoje"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task-001",
+      "title": "Preparar proposta Pack Reservas Diretas",
+      "description": "Fechar proposta comercial da Vila Mar com setup, mensalidade e escopo do website e CRM.",
+      "status": "hoje",
+      "priority": "alta",
+      "assigneeId": "team-001",
+      "dueDate": "2026-04-09",
+      "clientId": "client-002",
+      "serviceId": "websites-crm"
+    },
+    {
+      "id": "task-002",
+      "title": "Estruturar campanha Google Ads",
+      "description": "Organizar grupos, extensÃµes e landing principal para a ClÃ­nica Vera.",
+      "status": "em-curso",
+      "priority": "alta",
+      "assigneeId": "team-002",
+      "dueDate": "2026-04-10",
+      "clientId": "client-001",
+      "serviceId": "anuncios-trafego-organico"
+    },
+    {
+      "id": "task-003",
+      "title": "Criar peÃ§as visuais da semana",
+      "description": "Preparar 4 criativos para feed e stories do Atelier Bravo.",
+      "status": "em-revisao",
+      "priority": "media",
+      "assigneeId": "team-003",
+      "dueDate": "2026-04-08",
+      "clientId": "client-003",
+      "serviceId": "design-grafico"
+    },
+    {
+      "id": "task-004",
+      "title": "Rever funil de marcaÃ§Ã£o",
+      "description": "Auditar o percurso atÃ© marcaÃ§Ã£o e listar bloqueios de conversÃ£o.",
+      "status": "feito",
+      "priority": "media",
+      "assigneeId": "team-001",
+      "dueDate": "2026-04-07",
+      "clientId": "client-001",
+      "serviceId": "funis-conversao"
+    },
+    {
+      "id": "task-005",
+      "title": "Configurar onboarding do novo cliente",
+      "description": "Pedir acessos, domÃ­nios, analytics e materiais base ao cliente convertido.",
+      "status": "hoje",
+      "priority": "alta",
+      "assigneeId": "team-001",
+      "dueDate": "2026-04-08",
+      "clientId": null,
+      "serviceId": null
+    },
+    {
+      "id": "task-006",
+      "title": "CalendÃ¡rio social do mÃªs",
+      "description": "Definir temas, formatos e datas de publicaÃ§Ã£o para o cliente em manutenÃ§Ã£o.",
+      "status": "em-revisao",
+      "priority": "baixa",
+      "assigneeId": "team-003",
+      "dueDate": "2026-04-12",
+      "clientId": "client-003",
+      "serviceId": "gestao-redes-sociais"
+    }
+  ]
+}
