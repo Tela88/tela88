@@ -10,6 +10,7 @@ import type {
   RequestStatus,
   ServiceDeliveryStage,
   ServiceId,
+  ServiceStageMap,
   TeamMember,
   TeamTask,
   TaskPriority,
@@ -367,7 +368,7 @@ export async function updateClient(input: {
   setupFee: string;
   monthlyFee: string;
   services: ServiceId[];
-  serviceStages: Record<ServiceId, ServiceDeliveryStage | undefined>;
+  serviceStages: ServiceStageMap;
   notes: string;
   scheduledAt: string | null;
 }) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdminActionRequest } from "@/lib/auth";
 import { updateClient } from "@/lib/crm-store";
-import type { ClientStage, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
+import type { ClientStage, ServiceId, ServiceStageMap } from "@/lib/crm-types";
 
 export async function POST(
   request: Request,
@@ -18,7 +18,7 @@ export async function POST(
         setupFee?: string;
         monthlyFee?: string;
         services?: ServiceId[];
-        serviceStages?: Record<ServiceId, ServiceDeliveryStage | undefined>;
+        serviceStages?: ServiceStageMap;
         clientStage?: ClientStage;
         notes?: string;
         scheduledAt?: string | null;

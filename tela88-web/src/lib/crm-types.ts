@@ -11,6 +11,7 @@ export type ServiceId =
   | "gestao-redes-sociais";
 
 export type ServiceDeliveryStage = "planeado" | "em-processo" | "em-producao" | "concluido";
+export type ServiceStageMap = Partial<Record<ServiceId, ServiceDeliveryStage>>;
 export type TeamMemberStatus = "disponivel" | "ocupado" | "offline";
 export type TaskStatus = "hoje" | "em-curso" | "em-revisao" | "feito";
 export type TaskPriority = "alta" | "media" | "baixa";
