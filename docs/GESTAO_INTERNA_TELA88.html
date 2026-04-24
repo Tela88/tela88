@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Tela88 - Sistema de Gestao Interna</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: #1f261d;
+      background: #f7f8f2;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 10.4pt;
+      line-height: 1.48;
+    }
+
+    .page {
+      max-width: 190mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 0;
+    }
+
+    .cover {
+      border: 1px solid #dfe5d5;
+      border-left: 8px solid #c3f400;
+      padding: 18mm 14mm 14mm;
+      margin-bottom: 10mm;
+      background: linear-gradient(135deg, #ffffff 0%, #f1f5e8 100%);
+      break-inside: avoid;
+    }
+
+    .brand {
+      display: inline-block;
+      margin-bottom: 10mm;
+      border: 1px solid #cbd6b8;
+      border-radius: 999px;
+      padding: 5px 10px;
+      color: #496000;
+      font-size: 8pt;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      color: #12160f;
+      font-size: 29pt;
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin: 11mm 0 4mm;
+      padding-bottom: 2.5mm;
+      border-bottom: 1px solid #dfe5d5;
+      color: #172012;
+      font-size: 17pt;
+      line-height: 1.1;
+      break-after: avoid;
+    }
+
+    h3 {
+      margin: 7mm 0 3mm;
+      color: #26331e;
+      font-size: 12.5pt;
+      break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 3.4mm;
+    }
+
+    blockquote {
+      margin: 5mm 0 7mm;
+      padding: 4mm 5mm;
+      border-left: 4px solid #c3f400;
+      background: #f5f8ed;
+      color: #3d4837;
+      break-inside: avoid;
+    }
+
+    hr {
+      height: 1px;
+      margin: 7mm 0;
+      border: 0;
+      background: #e2e7d9;
+    }
+
+    table {
+      width: 100%;
+      margin: 4mm 0 7mm;
+      border-collapse: collapse;
+      font-size: 8.9pt;
+      break-inside: avoid;
+    }
+
+    th,
+    td {
+      border: 1px solid #dfe5d5;
+      padding: 2.4mm 2.8mm;
+      vertical-align: top;
+    }
+
+    th {
+      background: #edf3df;
+      color: #1f261d;
+      font-weight: 700;
+      text-align: left;
+    }
+
+    tr:nth-child(even) td {
+      background: #fbfcf7;
+    }
+
+    ul,
+    ol {
+      margin: 2mm 0 5mm 6mm;
+      padding-left: 6mm;
+    }
+
+    li {
+      margin-bottom: 1.4mm;
+    }
+
+    code {
+      border: 1px solid #e1e6da;
+      border-radius: 4px;
+      background: #f4f6ef;
+      padding: 0.4mm 1.1mm;
+      color: #334000;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.92em;
+    }
+
+    pre {
+      margin: 4mm 0 7mm;
+      border: 1px solid #dfe5d5;
+      border-radius: 6px;
+      background: #11160e;
+      color: #eef6e0;
+      padding: 4mm;
+      white-space: pre-wrap;
+      break-inside: avoid;
+    }
+
+    pre code {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .content > h1:first-child {
+      display: none;
+    }
+
+    .footer {
+      margin-top: 12mm;
+      border-top: 1px solid #dfe5d5;
+      padding-top: 4mm;
+      color: #7a8571;
+      font-size: 8.5pt;
+    }
+
+    @media screen {
+      body {
+        padding: 24px;
+      }
+
+      .page {
+        box-shadow: 0 18px 70px rgba(16, 17, 15, 0.16);
+        padding: 16mm;
+      }
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+      }
+
+      .page {
+        max-width: none;
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="cover">
+      <span class="brand">Tela88</span>
+      <h1>Tela88 - Sistema de Gestao Interna</h1>
+    </section>
+    <section class="content">
+      <h1>Tela88 - Sistema de Gestao Interna</h1>
+<blockquote><strong>Data:</strong> 2026-04-22<br /><strong>Objetivo:</strong> Documento de referencia para impressao e alinhamento interno.<br /><strong>Fonte de verdade:</strong> Codigo atual do backoffice em <code>tela88-web/src</code>, dados mock em <code>tela88-web/data/crm-data.json</code> e rotas API em <code>tela88-web/src/app/api</code>.<br /><strong>Regra:</strong> Este documento descreve o sistema existente e a evolucao logica prevista. Quando houver base de dados real, este documento deve ser atualizado.</blockquote>
+<hr />
+<h2>1. Visao Geral</h2>
+<p>O sistema de gestao interna da Tela88 funciona como um backoffice simples para acompanhar o ciclo comercial e operacional da agencia:</p>
+<ol><li>Entrada de pedidos pelo website.</li><li>Triagem comercial.</li><li>Marcacao e acompanhamento de reunioes.</li><li>Conversao de pedidos em clientes.</li><li>Definicao de packs e servicos contratados.</li><li>Gestao do estado de producao por cliente e por servico.</li><li>Criacao e acompanhamento de tarefas.</li><li>Distribuicao de trabalho pela equipa.</li></ol>
+<p>Atualmente, a persistencia e feita em ficheiros JSON locais. A arquitetura esta preparada para evoluir para CRM/base de dados, mas ainda nao usa Supabase ou outra base de dados no backoffice da Tela88.</p>
+<hr />
+<h2>2. Stack Atual</h2>
+<table><thead><tr><th>Camada</th><th>Tecnologia / Ficheiro</th><th>Funcao</th></tr></thead><tbody><tr><td>Frontend</td><td>Next.js App Router</td><td>Website publico e area reservada</td></tr>
+<tr><td>UI</td><td>Tailwind CSS v4 + CSS variables</td><td>Design system escuro da Tela88</td></tr>
+<tr><td>Auth admin</td><td><code>src/lib/auth.ts</code></td><td>Login simples por cookie assinado</td></tr>
+<tr><td>Store CRM</td><td><code>src/lib/crm-store.ts</code></td><td>Leitura/escrita em JSON</td></tr>
+<tr><td>Tipos</td><td><code>src/lib/crm-types.ts</code></td><td>Estados e entidades do sistema</td></tr>
+<tr><td>Catalogo</td><td><code>src/lib/service-catalog.ts</code></td><td>Servicos, labels e estados</td></tr>
+<tr><td>Dados</td><td><code>data/crm-data.json</code></td><td>Mock data principal</td></tr>
+<tr><td>Pedidos legacy</td><td><code>data/consultation-requests.json</code></td><td>Pedidos antigos/importados</td></tr></tbody></table>
+<hr />
+<h2>3. Acessos E Area Reservada</h2>
+<h3>Rotas principais</h3>
+<table><thead><tr><th>Rota</th><th>Funcao</th><th>Acesso</th></tr></thead><tbody><tr><td><code>/area-reservada/login</code></td><td>Login administrativo</td><td>Publico</td></tr>
+<tr><td><code>/area-reservada</code></td><td>Dashboard interno</td><td>Admin autenticado</td></tr>
+<tr><td><code>/area-reservada?tab=overview</code></td><td>Painel principal</td><td>Admin</td></tr>
+<tr><td><code>/area-reservada?tab=pending</code></td><td>Pedidos pendentes</td><td>Admin</td></tr>
+<tr><td><code>/area-reservada?tab=meetings</code></td><td>Reunioes</td><td>Admin</td></tr>
+<tr><td><code>/area-reservada?tab=clients</code></td><td>Clientes</td><td>Admin</td></tr>
+<tr><td><code>/area-reservada?tab=team</code></td><td>Equipa e tarefas</td><td>Admin</td></tr>
+<tr><td><code>/area-reservada/clientes/[id]</code></td><td>Gestao individual do cliente</td><td>Admin</td></tr></tbody></table>
+<h3>Credenciais atuais de desenvolvimento</h3>
+<table><thead><tr><th>Campo</th><th>Valor default</th></tr></thead><tbody><tr><td>Utilizador</td><td><code>admin</code></td></tr>
+<tr><td>Palavra-passe</td><td><code>change-me</code></td></tr>
+<tr><td>Cookie</td><td><code>tela88_admin_session</code></td></tr>
+<tr><td>Duracao</td><td>7 dias</td></tr></tbody></table>
+<p>Em producao, estes valores devem vir de variaveis de ambiente:</p>
+<table><thead><tr><th>Variavel</th><th>Funcao</th></tr></thead><tbody><tr><td><code>TELA88_ADMIN_USERNAME</code></td><td>Utilizador admin</td></tr>
+<tr><td><code>TELA88_ADMIN_PASSWORD</code></td><td>Palavra-passe admin</td></tr>
+<tr><td><code>TELA88_SESSION_SECRET</code></td><td>Segredo para assinar sessoes</td></tr></tbody></table>
+<hr />
+<h2>4. Entidades Do Sistema</h2>
+<h3>Pedido / Lead</h3>
+<p>Representa uma entrada comercial vinda do formulario ou inserida no CRM.</p>
+<table><thead><tr><th>Campo</th><th>Descricao</th></tr></thead><tbody><tr><td><code>id</code></td><td>Identificador unico</td></tr>
+<tr><td><code>name</code></td><td>Nome da pessoa</td></tr>
+<tr><td><code>email</code></td><td>Email de contacto</td></tr>
+<tr><td><code>company</code></td><td>Empresa</td></tr>
+<tr><td><code>revenue</code></td><td>Faixa de faturacao</td></tr>
+<tr><td><code>challenge</code></td><td>Problema/desafio descrito pelo lead</td></tr>
+<tr><td><code>focusArea</code></td><td>Area principal de foco</td></tr>
+<tr><td><code>createdAt</code></td><td>Data de entrada</td></tr>
+<tr><td><code>status</code></td><td>Estado comercial</td></tr>
+<tr><td><code>scheduledAt</code></td><td>Data/hora de reuniao</td></tr>
+<tr><td><code>internalNotes</code></td><td>Notas internas</td></tr>
+<tr><td><code>clientId</code></td><td>Cliente gerado apos conversao</td></tr></tbody></table>
+<h3>Cliente</h3>
+<p>Representa uma conta convertida e pronta para gestao operacional.</p>
+<table><thead><tr><th>Campo</th><th>Descricao</th></tr></thead><tbody><tr><td><code>id</code></td><td>Identificador unico</td></tr>
+<tr><td><code>requestId</code></td><td>Pedido que originou o cliente</td></tr>
+<tr><td><code>name</code> / <code>email</code> / <code>company</code></td><td>Dados comerciais</td></tr>
+<tr><td><code>revenue</code></td><td>Faixa de faturacao</td></tr>
+<tr><td><code>challenge</code></td><td>Desafio original</td></tr>
+<tr><td><code>focusArea</code></td><td>Area estrategica principal</td></tr>
+<tr><td><code>clientStage</code></td><td>Estado do cliente</td></tr>
+<tr><td><code>packName</code></td><td>Nome do pack vendido</td></tr>
+<tr><td><code>packDescription</code></td><td>Descricao do pack</td></tr>
+<tr><td><code>setupFee</code></td><td>Valor de setup</td></tr>
+<tr><td><code>monthlyFee</code></td><td>Valor mensal</td></tr>
+<tr><td><code>services</code></td><td>Servicos contratados e respetivo estado</td></tr>
+<tr><td><code>internalNotes</code></td><td>Notas internas</td></tr></tbody></table>
+<h3>Servico Contratado</h3>
+<p>Cada cliente pode ter varios servicos associados. Cada servico tem um estado proprio.</p>
+<table><thead><tr><th>Campo</th><th>Descricao</th></tr></thead><tbody><tr><td><code>id</code></td><td>Identificador do servico</td></tr>
+<tr><td><code>stage</code></td><td>Estado de entrega desse servico</td></tr></tbody></table>
+<h3>Membro Da Equipa</h3>
+<p>Representa uma pessoa interna ou colaborador operacional.</p>
+<table><thead><tr><th>Campo</th><th>Descricao</th></tr></thead><tbody><tr><td><code>id</code></td><td>Identificador unico</td></tr>
+<tr><td><code>name</code></td><td>Nome</td></tr>
+<tr><td><code>role</code></td><td>Funcao</td></tr>
+<tr><td><code>status</code></td><td>Disponibilidade</td></tr>
+<tr><td><code>dailyCapacity</code></td><td>Capacidade do dia</td></tr></tbody></table>
+<h3>Tarefa</h3>
+<p>Representa uma unidade de trabalho operacional.</p>
+<table><thead><tr><th>Campo</th><th>Descricao</th></tr></thead><tbody><tr><td><code>id</code></td><td>Identificador unico</td></tr>
+<tr><td><code>title</code></td><td>Titulo</td></tr>
+<tr><td><code>description</code></td><td>Descricao</td></tr>
+<tr><td><code>status</code></td><td>Estado no quadro</td></tr>
+<tr><td><code>priority</code></td><td>Prioridade</td></tr>
+<tr><td><code>assigneeId</code></td><td>Responsavel</td></tr>
+<tr><td><code>dueDate</code></td><td>Data limite</td></tr>
+<tr><td><code>clientId</code></td><td>Cliente associado</td></tr>
+<tr><td><code>serviceId</code></td><td>Servico associado</td></tr></tbody></table>
+<hr />
+<h2>5. Estados E Catalogos</h2>
+<h3>Estados De Pedido</h3>
+<table><thead><tr><th>Estado</th><th>Significado</th><th>Uso atual</th></tr></thead><tbody><tr><td><code>pending</code></td><td>Pedido novo, ainda sem reuniao confirmada</td><td>Sim</td></tr>
+<tr><td><code>agendado</code></td><td>Reuniao marcada</td><td>Sim</td></tr>
+<tr><td><code>atendido</code></td><td>Reuniao feita, ainda nao convertido</td><td>Sim</td></tr>
+<tr><td><code>cliente</code></td><td>Pedido convertido em cliente</td><td>Sim</td></tr>
+<tr><td><code>fechado</code></td><td>Pedido fechado/perdido</td><td>Tipo existe, pouco usado na UI atual</td></tr></tbody></table>
+<h3>Estados De Cliente</h3>
+<table><thead><tr><th>Estado</th><th>Significado</th></tr></thead><tbody><tr><td><code>em-processo</code></td><td>Cliente em preparacao, onboarding, proposta/pack ou arranque</td></tr>
+<tr><td><code>em-producao</code></td><td>Cliente ativo em producao/execucao</td></tr></tbody></table>
+<h3>Catalogo De Servicos</h3>
+<table><thead><tr><th>ID</th><th>Label</th></tr></thead><tbody><tr><td><code>websites-crm</code></td><td>Websites e CRM</td></tr>
+<tr><td><code>anuncios-trafego-organico</code></td><td>Anuncios e Trafego Organico</td></tr>
+<tr><td><code>funis-conversao</code></td><td>Funis de Conversao</td></tr>
+<tr><td><code>consultoria-marketing</code></td><td>Consultoria de Marketing</td></tr>
+<tr><td><code>design-grafico</code></td><td>Design Grafico</td></tr>
+<tr><td><code>gestao-redes-sociais</code></td><td>Gestao de Redes Sociais</td></tr></tbody></table>
+<h3>Estados De Entrega Do Servico</h3>
+<table><thead><tr><th>Estado</th><th>Significado</th></tr></thead><tbody><tr><td><code>planeado</code></td><td>Servico definido mas ainda nao iniciado</td></tr>
+<tr><td><code>em-processo</code></td><td>Preparacao ou execucao inicial</td></tr>
+<tr><td><code>em-producao</code></td><td>Execucao ativa/recorrente</td></tr>
+<tr><td><code>concluido</code></td><td>Entrega concluida</td></tr></tbody></table>
+<h3>Estados Da Equipa</h3>
+<table><thead><tr><th>Estado</th><th>Significado</th></tr></thead><tbody><tr><td><code>disponivel</code></td><td>Pode receber trabalho</td></tr>
+<tr><td><code>ocupado</code></td><td>Capacidade limitada</td></tr>
+<tr><td><code>offline</code></td><td>Nao disponivel</td></tr></tbody></table>
+<h3>Estados Das Tarefas</h3>
+<table><thead><tr><th>Estado</th><th>Significado</th></tr></thead><tbody><tr><td><code>hoje</code></td><td>Prioridade do dia</td></tr>
+<tr><td><code>em-curso</code></td><td>Em execucao</td></tr>
+<tr><td><code>em-revisao</code></td><td>A aguardar validacao/revisao</td></tr>
+<tr><td><code>feito</code></td><td>Concluida</td></tr></tbody></table>
+<h3>Prioridades Das Tarefas</h3>
+<table><thead><tr><th>Prioridade</th><th>Uso</th></tr></thead><tbody><tr><td><code>alta</code></td><td>Trabalho urgente ou de maior impacto</td></tr>
+<tr><td><code>media</code></td><td>Trabalho normal</td></tr>
+<tr><td><code>baixa</code></td><td>Trabalho secundario ou sem urgencia</td></tr></tbody></table>
+<hr />
+<h2>6. Fluxo Comercial</h2>
+<h3>Fluxo principal</h3>
+<ol><li>Um lead entra pelo formulario de contacto.</li><li>O sistema cria um pedido com estado <code>pending</code>.</li><li>O pedido aparece em <code>Pedidos pendentes</code>.</li><li>A equipa confirma uma reuniao e adiciona notas internas.</li><li>O pedido passa para <code>agendado</code>.</li><li>Depois da reuniao, o pedido passa para <code>atendido</code>.</li><li>Se houver conversao, o pedido passa para <code>cliente</code>.</li><li>O sistema cria ou associa um registo de cliente.</li><li>O cliente passa a ser gerido na area <code>Clientes</code>.</li></ol>
+<h3>Regras praticas</h3>
+<table><thead><tr><th>Momento</th><th>Acao</th></tr></thead><tbody><tr><td>Lead novo</td><td>Validar fit, desafio e area de foco</td></tr>
+<tr><td>Antes da reuniao</td><td>Confirmar data/hora e preparar notas</td></tr>
+<tr><td>Depois da reuniao</td><td>Marcar como atendido ou converter</td></tr>
+<tr><td>Conversao</td><td>Definir pack, valores, servicos e estado do cliente</td></tr>
+<tr><td>Pos-conversao</td><td>Criar tarefas associadas ao cliente/servicos</td></tr></tbody></table>
+<hr />
+<h2>7. Fluxo De Reunioes</h2>
+<p>A area de reunioes funciona como um quadro de pipeline comercial.</p>
+<table><thead><tr><th>Coluna</th><th>Origem</th><th>Proxima acao</th></tr></thead><tbody><tr><td>Agendado</td><td>Pedido com <code>status = agendado</code></td><td>Fazer reuniao</td></tr>
+<tr><td>Atendido</td><td>Pedido com <code>status = atendido</code></td><td>Converter ou fechar</td></tr>
+<tr><td>Cliente</td><td>Pedido com <code>status = cliente</code></td><td>Abrir cliente</td></tr></tbody></table>
+<p>O sistema suporta drag and drop entre colunas e acoes por botao. As alteracoes chamam endpoints internos e atualizam o JSON.</p>
+<hr />
+<h2>8. Fluxo De Clientes E Servicos</h2>
+<h3>Cliente</h3>
+<p>Depois de convertido, o cliente deve ter:</p>
+<ol><li>Pack comercial definido.</li><li>Descricao clara do pack.</li><li>Setup fee e mensalidade.</li><li>Servicos contratados.</li><li>Estado de cada servico.</li><li>Notas internas.</li><li>Proxima reuniao ou data relevante.</li></ol>
+<h3>Servicos</h3>
+<p>Cada servico dentro do cliente deve responder a quatro perguntas:</p>
+<table><thead><tr><th>Pergunta</th><th>Exemplo</th></tr></thead><tbody><tr><td>O que foi vendido?</td><td>Websites e CRM</td></tr>
+<tr><td>Em que estado esta?</td><td>Em processo</td></tr>
+<tr><td>Quem trabalha nisso?</td><td>Tarefa atribuida a Mariana</td></tr>
+<tr><td>Qual e a proxima entrega?</td><td>Landing + CRM inicial</td></tr></tbody></table>
+<h3>Ciclo recomendado</h3>
+<ol><li>Cliente entra em <code>em-processo</code>.</li><li>Equipa define pack e servicos.</li><li>Servicos comecam em <code>planeado</code>.</li><li>Cada servico gera tarefas.</li><li>Quando a execucao arranca, servico passa para <code>em-processo</code> ou <code>em-producao</code>.</li><li>Quando finalizado, passa para <code>concluido</code>.</li><li>Cliente pode passar para <code>em-producao</code> quando estiver em execucao recorrente.</li></ol>
+<hr />
+<h2>9. Fluxo De Tarefas E Equipa</h2>
+<p>As tarefas sao a ponte entre o cliente, o servico e a equipa.</p>
+<h3>Criacao de tarefa</h3>
+<p>Uma tarefa deve incluir:</p>
+<table><thead><tr><th>Campo</th><th>Regra</th></tr></thead><tbody><tr><td>Titulo</td><td>Acao clara e curta</td></tr>
+<tr><td>Descricao</td><td>Contexto suficiente para executar</td></tr>
+<tr><td>Responsavel</td><td>Membro da equipa</td></tr>
+<tr><td>Estado</td><td><code>hoje</code>, <code>em-curso</code>, <code>em-revisao</code> ou <code>feito</code></td></tr>
+<tr><td>Prioridade</td><td><code>alta</code>, <code>media</code> ou <code>baixa</code></td></tr>
+<tr><td>Cliente</td><td>Opcional, mas recomendado</td></tr>
+<tr><td>Servico</td><td>Opcional, mas recomendado quando ligada a cliente</td></tr>
+<tr><td>Data limite</td><td>Opcional, mas util para planeamento</td></tr></tbody></table>
+<h3>Quadro de tarefas</h3>
+<table><thead><tr><th>Coluna</th><th>Significado</th></tr></thead><tbody><tr><td>Hoje</td><td>Trabalho a atacar agora</td></tr>
+<tr><td>Em curso</td><td>Trabalho em execucao</td></tr>
+<tr><td>Em revisao</td><td>Trabalho pronto para validar</td></tr>
+<tr><td>Feito</td><td>Trabalho concluido</td></tr></tbody></table>
+<h3>Relacao com equipa</h3>
+<p>Cada membro da equipa tem estado e capacidade diaria. O objetivo e evitar atribuir tarefas sem visibilidade de carga.</p>
+<table><thead><tr><th>Decisao</th><th>Deve considerar</th></tr></thead><tbody><tr><td>Atribuir tarefa</td><td>Capacidade diaria e funcao</td></tr>
+<tr><td>Mudar prioridade</td><td>Impacto no cliente e prazo</td></tr>
+<tr><td>Passar para revisao</td><td>Existe output validavel?</td></tr>
+<tr><td>Marcar como feito</td><td>Entrega foi concluida e revista?</td></tr></tbody></table>
+<hr />
+<h2>10. Mapa Do Backoffice</h2>
+<table><thead><tr><th>Area</th><th>O que mostra</th><th>Acoes principais</th></tr></thead><tbody><tr><td>Painel principal</td><td>KPIs, proxima reuniao, tarefas, clientes recentes</td><td>Navegar para detalhe</td></tr>
+<tr><td>Pedidos pendentes</td><td>Leads por confirmar</td><td>Marcar reuniao</td></tr>
+<tr><td>Reunioes</td><td>Pipeline agendado/atendido/cliente</td><td>Drag and drop, converter</td></tr>
+<tr><td>Clientes</td><td>Kanban de clientes e base de clientes</td><td>Abrir cliente, mudar estado</td></tr>
+<tr><td>Cliente individual</td><td>Pack, servicos, notas e tarefas do cliente</td><td>Editar pack/servicos, rever tarefas</td></tr>
+<tr><td>Equipa e tarefas</td><td>Membros, capacidade, criacao de tarefas e quadro diario</td><td>Criar membro, criar tarefa, mover tarefas</td></tr></tbody></table>
+<hr />
+<h2>11. Endpoints Internos</h2>
+<table><thead><tr><th>Endpoint</th><th>Metodo</th><th>Funcao</th></tr></thead><tbody><tr><td><code>/api/auth/login</code></td><td>POST</td><td>Login admin e criacao de cookie</td></tr>
+<tr><td><code>/api/auth/logout</code></td><td>POST</td><td>Logout admin</td></tr>
+<tr><td><code>/api/consultations</code></td><td>POST</td><td>Criar pedido a partir do website</td></tr>
+<tr><td><code>/api/admin/requests/[id]/confirm</code></td><td>POST</td><td>Confirmar data/hora de reuniao</td></tr>
+<tr><td><code>/api/admin/requests/[id]/attended</code></td><td>POST</td><td>Marcar reuniao como atendida</td></tr>
+<tr><td><code>/api/admin/requests/[id]/convert</code></td><td>POST</td><td>Converter pedido em cliente</td></tr>
+<tr><td><code>/api/admin/requests/[id]/stage</code></td><td>POST</td><td>Alterar estado de pedido no kanban</td></tr>
+<tr><td><code>/api/admin/clients/[id]</code></td><td>POST</td><td>Atualizar pack, servicos e notas do cliente</td></tr>
+<tr><td><code>/api/admin/clients/[id]/stage</code></td><td>POST</td><td>Alterar estado do cliente</td></tr>
+<tr><td><code>/api/admin/tasks</code></td><td>POST</td><td>Criar tarefa</td></tr>
+<tr><td><code>/api/admin/tasks/[id]</code></td><td>POST</td><td>Atualizar tarefa</td></tr>
+<tr><td><code>/api/admin/team</code></td><td>POST</td><td>Criar membro da equipa</td></tr></tbody></table>
+<p>Todas as acoes admin passam por verificacao de sessao e validacao basica de origem.</p>
+<hr />
+<h2>12. Persistencia Atual</h2>
+<h3>Ficheiros</h3>
+<table><thead><tr><th>Ficheiro</th><th>Funcao</th></tr></thead><tbody><tr><td><code>data/crm-data.json</code></td><td>Store principal: pedidos, clientes, equipa e tarefas</td></tr>
+<tr><td><code>data/consultation-requests.json</code></td><td>Dados legacy de pedidos</td></tr></tbody></table>
+<h3>Limites do modelo atual</h3>
+<table><thead><tr><th>Limite</th><th>Impacto</th></tr></thead><tbody><tr><td>JSON local</td><td>Nao e adequado para multiutilizador real</td></tr>
+<tr><td>Sem historico/auditoria</td><td>Nao se sabe quem alterou o que</td></tr>
+<tr><td>Sem permissao granular</td><td>So existe admin simples</td></tr>
+<tr><td>Sem relacoes fortes</td><td>Integridade depende do codigo</td></tr>
+<tr><td>Sem anexos/assets por cliente</td><td>Entregaveis ainda nao estao estruturados</td></tr>
+<tr><td>Sem notificacoes</td><td>Follow-up depende de consulta manual</td></tr></tbody></table>
+<hr />
+<h2>13. Evolucao Recomendada</h2>
+<h3>Fase 1 - Estabilizar mock CRM</h3>
+<ol><li>Corrigir encoding de texto nos dados e labels.</li><li>Normalizar linguagem: usar &quot;kanban&quot; em vez de &quot;kaban&quot;.</li><li>Rever estados e fechar o fluxo <code>fechado</code>.</li><li>Adicionar validacoes mais fortes aos formularios.</li><li>Melhorar visao de detalhe por cliente.</li></ol>
+<h3>Fase 2 - Base de dados</h3>
+<p>Criar tabelas equivalentes:</p>
+<table><thead><tr><th>Tabela</th><th>Entidade</th></tr></thead><tbody><tr><td><code>consultation_requests</code></td><td>Pedidos/leads</td></tr>
+<tr><td><code>clients</code></td><td>Clientes</td></tr>
+<tr><td><code>client_services</code></td><td>Servicos por cliente</td></tr>
+<tr><td><code>team_members</code></td><td>Equipa</td></tr>
+<tr><td><code>tasks</code></td><td>Tarefas</td></tr>
+<tr><td><code>activity_log</code></td><td>Historico de alteracoes</td></tr>
+<tr><td><code>meetings</code></td><td>Reunioes e follow-ups</td></tr></tbody></table>
+<h3>Fase 3 - Operacao real</h3>
+<ol><li>Autenticacao com utilizadores reais.</li><li>Roles por funcao.</li><li>Auditoria de alteracoes.</li><li>Notificacoes internas.</li><li>Relatorios por cliente.</li><li>Ligacao a automacoes da AI Agency.</li><li>Espaco por cliente com assets, briefings, outputs e memoria.</li></ol>
+<hr />
+<h2>14. Modelo Operacional Desejado</h2>
+<p>O backoffice deve tornar-se o centro da operacao interna da Tela88:</p>
+<pre><code>Pedido -&gt; Reuniao -&gt; Cliente -&gt; Pack -&gt; Servicos -&gt; Tarefas -&gt; Equipa -&gt; Entregas -&gt; Retencao</code></pre>
+<p>O sistema ideal deve permitir responder rapidamente:</p>
+<table><thead><tr><th>Pergunta</th><th>Onde responder</th></tr></thead><tbody><tr><td>Que leads temos por tratar?</td><td>Pedidos pendentes</td></tr>
+<tr><td>Que reunioes estao marcadas?</td><td>Reunioes</td></tr>
+<tr><td>Que clientes estao em processo?</td><td>Clientes</td></tr>
+<tr><td>Que servicos cada cliente contratou?</td><td>Cliente individual</td></tr>
+<tr><td>Que tarefas existem para hoje?</td><td>Equipa e tarefas</td></tr>
+<tr><td>Quem esta responsavel por cada entrega?</td><td>Tarefa + equipa</td></tr>
+<tr><td>O que falta para entregar?</td><td>Estado do servico + tarefas abertas</td></tr></tbody></table>
+<hr />
+<h2>15. Resumo Executivo</h2>
+<p>O sistema atual ja define o esqueleto de uma operacao interna de agencia:</p>
+<ul><li>CRM comercial para leads e reunioes.</li><li>Conversao de leads em clientes.</li><li>Gestao de packs e servicos por cliente.</li><li>Kanban de clientes.</li><li>Equipa com capacidade diaria.</li><li>Tarefas associadas a clientes e servicos.</li><li>API interna para mutacoes.</li><li>Store local em JSON, pronta para ser substituida por base de dados.</li></ul>
+<p>A prioridade seguinte deve ser transformar esta estrutura mock numa base persistente real, mantendo o mesmo modelo mental: simples, observavel e orientado a execucao.</p>
+<hr />
+<p><strong>Fim do documento</strong></p>
+    </section>
+    <footer class="footer">
+      Documento gerado a partir de GESTAO_INTERNA_TELA88.md.
+    </footer>
+  </main>
+</body>
+</html>

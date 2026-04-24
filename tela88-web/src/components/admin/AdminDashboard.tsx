@@ -679,11 +679,19 @@ export default function AdminDashboard({
         {activeTab === "clients" ? (
           <div className="space-y-8">
             <div>
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-headline text-3xl font-bold text-on-surface">Kaban de clientes</h2>
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                  Arrasta entre Em processo e Em producao
-                </span>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">Kaban de clientes</h2>
+                  <p className="mt-2 font-body text-sm text-on-surface/55">
+                    Entrada direta de clientes e organizacao da base ativa.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    Arrasta entre Em processo e Em producao
+                  </span>
+                  <ManualClientCreateModal />
+                </div>
               </div>
 
               <div className="grid gap-4 xl:grid-cols-2">
@@ -862,4 +870,6 @@ export default function AdminDashboard({
     </div>
   );
 }
+
+
 
