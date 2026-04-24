@@ -25,7 +25,7 @@ export default function AreaReservadaShell({ children }: { children: React.React
                 </p>
                 <h2 className="mt-3 font-headline text-2xl font-bold text-on-surface">Admin Dashboard</h2>
                 <p className="mt-2 font-body text-sm leading-relaxed text-on-surface/45">
-                  CRM comercial, reuniões, clientes, equipa e produção.
+                  Tarefas, servicos, clientes, reunioes e pipeline comercial.
                 </p>
               </div>
             </aside>
@@ -41,11 +41,13 @@ export default function AreaReservadaShell({ children }: { children: React.React
           <div className="mt-4 overflow-x-auto">
             <div className="flex gap-2 pb-2">
               {[
-                ["overview", "Painel"],
-                ["pending", "Pedidos"],
-                ["meetings", "Reuniões"],
+                ["tasks", "Tarefas"],
+                ["my-zone", "Minha Zona"],
+                ["services", "Servicos"],
                 ["clients", "Clientes"],
-                ["team", "Equipa"],
+                ["meetings", "Reunioes"],
+                ["pending", "Pedidos"],
+                ["overview", "Painel"],
               ].map(([tab, label]) => (
                 <Link
                   key={tab}

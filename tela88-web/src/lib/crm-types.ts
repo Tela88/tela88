@@ -15,6 +15,7 @@ export type ServiceStageMap = Partial<Record<ServiceId, ServiceDeliveryStage>>;
 export type TeamMemberStatus = "disponivel" | "ocupado" | "offline";
 export type TaskStatus = "hoje" | "em-curso" | "em-revisao" | "feito";
 export type TaskPriority = "alta" | "media" | "baixa";
+export type InternalUserRole = "admin" | "collaborator";
 
 export type PackService = {
   id: ServiceId;
@@ -25,8 +26,20 @@ export type TeamMember = {
   id: string;
   name: string;
   role: string;
+  accessRole?: InternalUserRole;
+  username?: string;
+  email?: string;
   status: TeamMemberStatus;
   dailyCapacity: string;
+};
+
+export type AuthenticatedUser = {
+  id: string;
+  username: string;
+  name: string;
+  email: string;
+  role: InternalUserRole;
+  functionRole: string;
 };
 
 export type TeamTask = {

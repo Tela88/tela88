@@ -1,7 +1,8 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   compress: true,
+  output: "standalone",
 
   experimental: {
     optimizePackageImports: ["three"],
@@ -17,14 +18,12 @@ const nextConfig: NextConfig = {
       ],
     },
     {
-      // Cache estático agressivo para assets imutáveis
       source: "/_next/static/(.*)",
       headers: [
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
       ],
     },
     {
-      // Fontes com cache longo
       source: "/fonts/(.*)",
       headers: [
         { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
@@ -32,7 +31,6 @@ const nextConfig: NextConfig = {
     },
   ],
 
-  // Remover console.log em produção
   compiler: {
     removeConsole: process.env.NODE_ENV === "production"
       ? { exclude: ["error"] }
@@ -41,3 +39,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+

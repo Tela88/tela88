@@ -5,17 +5,19 @@ import { usePathname, useSearchParams } from "next/navigation";
 import LogoutButton from "@/components/admin/LogoutButton";
 
 const dashboardItems = [
-  { id: "overview", label: "Painel principal" },
-  { id: "pending", label: "Pedidos pendentes" },
-  { id: "meetings", label: "Reuniões" },
+  { id: "tasks", label: "Tarefas" },
+  { id: "my-zone", label: "Minha Zona" },
+  { id: "services", label: "Servicos" },
   { id: "clients", label: "Clientes" },
-  { id: "team", label: "Equipa e tarefas" },
+  { id: "meetings", label: "Reunioes" },
+  { id: "pending", label: "Pedidos pendentes" },
+  { id: "overview", label: "Painel geral" },
 ] as const;
 
 export default function AdminSidebar() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const currentTab = searchParams.get("tab") ?? "overview";
+  const currentTab = searchParams.get("tab") ?? "tasks";
   const isClientPage = pathname.startsWith("/area-reservada/clientes/");
 
   return (
@@ -26,7 +28,7 @@ export default function AdminSidebar() {
         </p>
         <h2 className="mt-3 font-headline text-2xl font-bold text-on-surface">Admin Dashboard</h2>
         <p className="mt-2 font-body text-sm leading-relaxed text-on-surface/45">
-          CRM comercial, reuniões, clientes, equipa e produção.
+          Tarefas, servicos, clientes, reunioes e pipeline comercial.
         </p>
       </div>
 

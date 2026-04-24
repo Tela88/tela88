@@ -1,363 +1,328 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
+﻿import { randomUUID } from "node:crypto";
+import { deleteRows, insertRow, selectRows, selectSingle, updateRows } from "@/lib/supabase-rest";
 import type {
   ClientRecord,
+  ClientStage,
   ConsultationRequest,
   ConsultationRequestInput,
   CrrmData,
-  ClientStage,
+  InternalUserRole,
+  PackService,
   RequestStatus,
   ServiceDeliveryStage,
   ServiceId,
   ServiceStageMap,
-  TeamMember,
-  TeamTask,
   TaskPriority,
   TaskStatus,
+  TeamMember,
   TeamMemberStatus,
+  TeamTask,
 } from "@/lib/crm-types";
 
-const dataDirectory = path.join(process.cwd(), "data");
-const legacyRequestsPath = path.join(dataDirectory, "consultation-requests.json");
-const crmPath = path.join(dataDirectory, "crm-data.json");
-
-const emptyData: CrrmData = {
-  requests: [],
-  clients: [],
-  teamMembers: [],
-  tasks: [],
+type UserRow = {
+  id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: InternalUserRole;
+  function_role: string;
+  status: TeamMemberStatus;
+  daily_capacity: string;
 };
 
-function normalizeTeamMember(raw: Partial<TeamMember>): TeamMember {
+type RequestRow = {
+  id: string;
+  name: string;
+  email: string;
+  company: string;
+  revenue: string;
+  challenge: string;
+  focus_area: string;
+  created_at: string;
+  status: RequestStatus;
+  scheduled_at: string | null;
+  internal_notes: string;
+  client_id: string | null;
+};
+
+type ClientRow = {
+  id: string;
+  request_id: string;
+  name: string;
+  email: string;
+  company: string;
+  revenue: string;
+  challenge: string;
+  focus_area: string;
+  created_at: string;
+  scheduled_at: string | null;
+  client_stage: ClientStage;
+  pack_name: string;
+  pack_description: string;
+  setup_fee: string;
+  monthly_fee: string;
+  internal_notes: string;
+};
+
+type ClientServiceRow = {
+  id: string;
+  client_id: string;
+  service_id: ServiceId;
+  stage: ServiceDeliveryStage;
+};
+
+type TaskRow = {
+  id: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  assignee_id: string | null;
+  due_date: string | null;
+  client_id: string | null;
+  service_id: ServiceId | null;
+};
+
+function mapRequest(row: RequestRow): ConsultationRequest {
   return {
-    id: raw.id ?? randomUUID(),
-    name: raw.name ?? "",
-    role: raw.role ?? "",
-    status: (raw.status ?? "disponivel") as TeamMemberStatus,
-    dailyCapacity: raw.dailyCapacity ?? "",
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    company: row.company,
+    revenue: row.revenue,
+    challenge: row.challenge,
+    focusArea: row.focus_area,
+    createdAt: row.created_at,
+    status: row.status,
+    scheduledAt: row.scheduled_at,
+    internalNotes: row.internal_notes,
+    clientId: row.client_id,
   };
 }
 
-function normalizeTask(raw: Partial<TeamTask>): TeamTask {
+function mapTeamMember(row: UserRow): TeamMember {
   return {
-    id: raw.id ?? randomUUID(),
-    title: raw.title ?? "",
-    description: raw.description ?? "",
-    status: (raw.status ?? "hoje") as TaskStatus,
-    priority: (raw.priority ?? "media") as TaskPriority,
-    assigneeId: raw.assigneeId ?? "",
-    dueDate: raw.dueDate ?? null,
-    clientId: raw.clientId ?? null,
-    serviceId: raw.serviceId ?? null,
+    id: row.id,
+    name: row.name,
+    role: row.function_role,
+    accessRole: row.role,
+    username: row.username,
+    email: row.email,
+    status: row.status,
+    dailyCapacity: row.daily_capacity,
   };
 }
 
-async function ensureStore() {
-  await mkdir(dataDirectory, { recursive: true });
-
-  try {
-    await readFile(crmPath, "utf8");
-  } catch {
-    const migrated = await migrateLegacyData();
-    await writeData(migrated);
-  }
-}
-
-function normalizeClient(raw: Partial<ClientRecord> & { requestId?: string }): ClientRecord {
+function mapClient(row: ClientRow, services: ClientServiceRow[]): ClientRecord {
   return {
-    id: raw.id ?? randomUUID(),
-    requestId: raw.requestId ?? "",
-    name: raw.name ?? "",
-    email: raw.email ?? "",
-    company: raw.company ?? "",
-    revenue: raw.revenue ?? "",
-    challenge: raw.challenge ?? "",
-    focusArea: raw.focusArea ?? "",
-    createdAt: raw.createdAt ?? new Date().toISOString(),
-    scheduledAt: raw.scheduledAt ?? null,
-    clientStage: raw.clientStage ?? "em-processo",
-    packName: raw.packName ?? "",
-    packDescription: raw.packDescription ?? "",
-    setupFee: raw.setupFee ?? "",
-    monthlyFee: raw.monthlyFee ?? "",
-    services: (raw.services ?? []).map((service) => {
-      if (typeof service === "string") {
-        return {
-          id: service as ServiceId,
-          stage: "planeado" as ServiceDeliveryStage,
-        };
-      }
-
-      return {
-        id: service.id,
-        stage: service.stage ?? "planeado",
-      };
-    }),
-    internalNotes: raw.internalNotes ?? "",
-  };
-}
-
-async function migrateLegacyData(): Promise<CrrmData> {
-  try {
-    const raw = await readFile(crmPath, "utf8");
-    const parsed = JSON.parse(raw) as Partial<CrrmData>;
-
-    return {
-      requests: (parsed.requests ?? []).map((item) => ({
-        id: item.id ?? randomUUID(),
-        name: item.name ?? "",
-        email: item.email ?? "",
-        company: item.company ?? "",
-        revenue: item.revenue ?? "",
-        challenge: item.challenge ?? "",
-        focusArea: item.focusArea ?? "",
-        createdAt: item.createdAt ?? new Date().toISOString(),
-        status: item.status ?? "pending",
-        scheduledAt: item.scheduledAt ?? null,
-        internalNotes: item.internalNotes ?? "",
-        clientId: item.clientId ?? null,
+    id: row.id,
+    requestId: row.request_id,
+    name: row.name,
+    email: row.email,
+    company: row.company,
+    revenue: row.revenue,
+    challenge: row.challenge,
+    focusArea: row.focus_area,
+    createdAt: row.created_at,
+    scheduledAt: row.scheduled_at,
+    clientStage: row.client_stage,
+    packName: row.pack_name,
+    packDescription: row.pack_description,
+    setupFee: row.setup_fee,
+    monthlyFee: row.monthly_fee,
+    services: services
+      .filter((service) => service.client_id === row.id)
+      .map<PackService>((service) => ({
+        id: service.service_id,
+        stage: service.stage,
       })),
-      clients: (parsed.clients ?? []).map((item) => normalizeClient(item)),
-      teamMembers: (parsed.teamMembers ?? []).map((item) => normalizeTeamMember(item)),
-      tasks: (parsed.tasks ?? []).map((item) => normalizeTask(item)),
-    };
-  } catch {
-    try {
-      const legacy = await readFile(legacyRequestsPath, "utf8");
-      const parsed = JSON.parse(legacy) as Partial<ConsultationRequest>[];
-
-      return {
-        requests: parsed.map((item) => ({
-          id: item.id ?? randomUUID(),
-          name: item.name ?? "",
-          email: item.email ?? "",
-          company: item.company ?? "",
-          revenue: item.revenue ?? "",
-          challenge: item.challenge ?? "",
-          focusArea: item.focusArea ?? "",
-          createdAt: item.createdAt ?? new Date().toISOString(),
-          status: item.status ?? "pending",
-          scheduledAt: item.scheduledAt ?? null,
-          internalNotes: item.internalNotes ?? "",
-          clientId: item.clientId ?? null,
-        })),
-        clients: [],
-        teamMembers: [],
-        tasks: [],
-      };
-    } catch {
-      return emptyData;
-    }
-  }
-}
-
-async function readData(): Promise<CrrmData> {
-  await ensureStore();
-  const file = await readFile(crmPath, "utf8");
-  const parsed = JSON.parse(file) as CrrmData;
-
-  return {
-    requests: (parsed.requests ?? []).map((item) => ({
-      id: item.id ?? randomUUID(),
-      name: item.name ?? "",
-      email: item.email ?? "",
-      company: item.company ?? "",
-      revenue: item.revenue ?? "",
-      challenge: item.challenge ?? "",
-      focusArea: item.focusArea ?? "",
-      createdAt: item.createdAt ?? new Date().toISOString(),
-      status: item.status ?? "pending",
-      scheduledAt: item.scheduledAt ?? null,
-      internalNotes: item.internalNotes ?? "",
-      clientId: item.clientId ?? null,
-    })),
-    clients: (parsed.clients ?? []).map((item) => normalizeClient(item)),
-    teamMembers: (parsed.teamMembers ?? []).map((item) => normalizeTeamMember(item)),
-    tasks: (parsed.tasks ?? []).map((item) => normalizeTask(item)),
+    internalNotes: row.internal_notes,
   };
 }
 
-async function writeData(data: CrrmData) {
-  await writeFile(crmPath, JSON.stringify(data, null, 2), "utf8");
+function mapTask(row: TaskRow): TeamTask {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    status: row.status,
+    priority: row.priority,
+    assigneeId: row.assignee_id ?? "",
+    dueDate: row.due_date,
+    clientId: row.client_id,
+    serviceId: row.service_id,
+  };
+}
+
+async function getClientServices() {
+  return selectRows<ClientServiceRow>("client_services", {
+    order: "created_at.asc",
+  });
 }
 
 export async function createConsultationRequest(
   input: ConsultationRequestInput,
 ): Promise<ConsultationRequest> {
-  const data = await readData();
-
-  const request: ConsultationRequest = {
-    id: randomUUID(),
-    createdAt: new Date().toISOString(),
+  const request = await insertRow<RequestRow>("consultation_requests", {
+    name: input.name,
+    email: input.email,
+    company: input.company,
+    revenue: input.revenue,
+    challenge: input.challenge,
+    focus_area: input.focusArea,
     status: "pending",
-    scheduledAt: null,
-    internalNotes: "",
-    clientId: null,
-    ...input,
-  };
+  });
 
-  data.requests.unshift(request);
-  await writeData(data);
+  if (!request) {
+    throw new Error("Nao foi possivel criar o pedido.");
+  }
 
-  return request;
+  return mapRequest(request);
 }
 
 export async function getConsultationRequests() {
-  const data = await readData();
-  return data.requests.sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
+  const rows = await selectRows<RequestRow>("consultation_requests", {
+    order: "created_at.desc",
+  });
+
+  return rows.map(mapRequest);
 }
 
 export async function getClients() {
-  const data = await readData();
-  return data.clients.sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
+  const [clients, services] = await Promise.all([
+    selectRows<ClientRow>("clients", { order: "created_at.desc" }),
+    getClientServices(),
+  ]);
+
+  return clients.map((client) => mapClient(client, services));
 }
 
 export async function getTeamMembers() {
-  const data = await readData();
-  return data.teamMembers;
+  const rows = await selectRows<UserRow>("internal_users", {
+    order: "created_at.asc",
+  });
+
+  return rows.filter((user) => user.role === "collaborator").map(mapTeamMember);
 }
 
 export async function getTasks() {
-  const data = await readData();
-  return data.tasks;
+  const rows = await selectRows<TaskRow>("team_tasks", {
+    order: "created_at.desc",
+  });
+
+  return rows.map(mapTask);
 }
 
-export async function getCrmDashboardData() {
-  const data = await readData();
-  const requests = data.requests.sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
-  const clients = data.clients.sort(
-    (left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime(),
-  );
+export async function getCrmDashboardData(): Promise<CrrmData> {
+  const [requests, clients, teamMembers, tasks] = await Promise.all([
+    getConsultationRequests(),
+    getClients(),
+    getTeamMembers(),
+    getTasks(),
+  ]);
+
   return {
     requests,
     clients,
-    teamMembers: data.teamMembers,
-    tasks: data.tasks,
+    teamMembers,
+    tasks,
   };
 }
 
 export async function getClientById(id: string) {
-  const clients = await getClients();
-  return clients.find((client) => client.id === id) ?? null;
+  const [client, services] = await Promise.all([
+    selectSingle<ClientRow>("clients", {
+      filters: { id },
+    }),
+    getClientServices(),
+  ]);
+
+  return client ? mapClient(client, services) : null;
 }
 
 export async function confirmConsultationRequest(id: string, scheduledAt: string, notes: string) {
-  const data = await readData();
-  const request = data.requests.find((item) => item.id === id);
+  const rows = await updateRows<RequestRow>(
+    "consultation_requests",
+    { id },
+    {
+      status: "agendado",
+      scheduled_at: scheduledAt,
+      internal_notes: notes,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
-  if (!request) {
-    throw new Error("Pedido não encontrado.");
+  if (!rows[0]) {
+    throw new Error("Pedido nao encontrado.");
   }
 
-  request.status = "agendado";
-  request.scheduledAt = scheduledAt;
-  request.internalNotes = notes;
-
-  await writeData(data);
-  return request;
+  return mapRequest(rows[0]);
 }
 
 export async function markMeetingAttended(id: string) {
-  const data = await readData();
-  const request = data.requests.find((item) => item.id === id);
+  const rows = await updateRows<RequestRow>(
+    "consultation_requests",
+    { id },
+    {
+      status: "atendido",
+      updated_at: new Date().toISOString(),
+    },
+  );
 
-  if (!request) {
-    throw new Error("Pedido não encontrado.");
+  if (!rows[0]) {
+    throw new Error("Pedido nao encontrado.");
   }
 
-  request.status = "atendido";
-  await writeData(data);
-  return request;
+  return mapRequest(rows[0]);
 }
 
 export async function updateRequestStage(input: {
   id: string;
   status: Extract<RequestStatus, "agendado" | "atendido" | "cliente">;
 }) {
-  const data = await readData();
-  const request = data.requests.find((item) => item.id === input.id);
+  const request = await selectSingle<RequestRow>("consultation_requests", {
+    filters: { id: input.id },
+  });
 
   if (!request) {
     throw new Error("Pedido nao encontrado.");
   }
 
-  request.status = input.status;
+  let clientId = request.client_id;
 
-  if (input.status === "cliente" && !request.clientId) {
-    const client = normalizeClient({
-      id: randomUUID(),
-      requestId: request.id,
+  if (input.status === "cliente" && !clientId) {
+    const client = await insertRow<ClientRow>("clients", {
+      request_id: request.id,
       name: request.name,
       email: request.email,
       company: request.company,
       revenue: request.revenue,
       challenge: request.challenge,
-      focusArea: request.focusArea,
-      createdAt: new Date().toISOString(),
-      scheduledAt: request.scheduledAt,
-      clientStage: "em-processo",
-      packName: "",
-      packDescription: "",
-      setupFee: "",
-      monthlyFee: "",
-      services: [],
-      internalNotes: request.internalNotes,
+      focus_area: request.focus_area,
+      scheduled_at: request.scheduled_at,
+      internal_notes: request.internal_notes,
+      client_stage: "em-processo",
     });
 
-    request.clientId = client.id;
-    data.clients.unshift(client);
+    clientId = client?.id ?? null;
   }
 
-  await writeData(data);
-  return request;
+  const rows = await updateRows<RequestRow>(
+    "consultation_requests",
+    { id: input.id },
+    {
+      status: input.status,
+      client_id: clientId,
+      updated_at: new Date().toISOString(),
+    },
+  );
+
+  return mapRequest(rows[0]);
 }
 
 export async function convertRequestToClient(input: { requestId: string }) {
-  const data = await readData();
-  const request = data.requests.find((item) => item.id === input.requestId);
-
-  if (!request) {
-    throw new Error("Pedido não encontrado.");
-  }
-
-  if (request.clientId) {
-    return data.clients.find((item) => item.id === request.clientId) ?? null;
-  }
-
-  const client = normalizeClient({
-    id: randomUUID(),
-    requestId: request.id,
-    name: request.name,
-    email: request.email,
-    company: request.company,
-    revenue: request.revenue,
-    challenge: request.challenge,
-    focusArea: request.focusArea,
-    createdAt: new Date().toISOString(),
-    scheduledAt: request.scheduledAt,
-    clientStage: "em-processo",
-    packName: "",
-    packDescription: "",
-    setupFee: "",
-    monthlyFee: "",
-    services: [],
-    internalNotes: request.internalNotes,
-  });
-
-  request.status = "cliente";
-  request.clientId = client.id;
-
-  data.clients.unshift(client);
-  await writeData(data);
-
-  return client;
+  const request = await updateRequestStage({ id: input.requestId, status: "cliente" });
+  return request.clientId ? getClientById(request.clientId) : null;
 }
 
 export async function updateClient(input: {
@@ -372,52 +337,148 @@ export async function updateClient(input: {
   notes: string;
   scheduledAt: string | null;
 }) {
-  const data = await readData();
-  const client = data.clients.find((item) => item.id === input.id);
+  const rows = await updateRows<ClientRow>(
+    "clients",
+    { id: input.id },
+    {
+      client_stage: input.clientStage,
+      pack_name: input.packName,
+      pack_description: input.packDescription,
+      setup_fee: input.setupFee,
+      monthly_fee: input.monthlyFee,
+      internal_notes: input.notes,
+      scheduled_at: input.scheduledAt,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
+  const client = rows[0];
   if (!client) {
-    throw new Error("Cliente não encontrado.");
+    throw new Error("Cliente nao encontrado.");
   }
 
-  const previousStages = new Map(client.services.map((service) => [service.id, service.stage]));
+  await deleteRows<ClientServiceRow>("client_services", { client_id: input.id });
+  await Promise.all(
+    input.services.map((serviceId) =>
+      insertRow<ClientServiceRow>("client_services", {
+        client_id: input.id,
+        service_id: serviceId,
+        stage: input.serviceStages[serviceId] ?? "planeado",
+      }),
+    ),
+  );
 
-  client.clientStage = input.clientStage;
-  client.packName = input.packName;
-  client.packDescription = input.packDescription;
-  client.setupFee = input.setupFee;
-  client.monthlyFee = input.monthlyFee;
-  client.internalNotes = input.notes;
-  client.scheduledAt = input.scheduledAt;
-  client.services = input.services.map((serviceId) => ({
-    id: serviceId,
-    stage: input.serviceStages[serviceId] ?? previousStages.get(serviceId) ?? "planeado",
-  }));
-
-  const sourceRequest = data.requests.find((item) => item.id === client.requestId);
-  if (sourceRequest) {
-    sourceRequest.scheduledAt = input.scheduledAt;
-    sourceRequest.internalNotes = input.notes;
-    sourceRequest.status = "cliente";
+  if (client.request_id && !client.request_id.startsWith("manual-")) {
+    await updateRows<RequestRow>(
+      "consultation_requests",
+      { id: client.request_id },
+      {
+        status: "cliente",
+        scheduled_at: input.scheduledAt,
+        internal_notes: input.notes,
+        updated_at: new Date().toISOString(),
+      },
+    );
   }
 
-  await writeData(data);
-  return client;
+  return getClientById(client.id);
 }
 
 export async function updateClientStage(input: {
   id: string;
   clientStage: ClientStage;
 }) {
-  const data = await readData();
-  const client = data.clients.find((item) => item.id === input.id);
+  const rows = await updateRows<ClientRow>(
+    "clients",
+    { id: input.id },
+    {
+      client_stage: input.clientStage,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
-  if (!client) {
+  if (!rows[0]) {
     throw new Error("Cliente nao encontrado.");
   }
 
-  client.clientStage = input.clientStage;
-  await writeData(data);
-  return client;
+  const services = await getClientServices();
+  return mapClient(rows[0], services);
+}
+
+export async function createTeamMember(input: {
+  name: string;
+  role: string;
+  status: TeamMemberStatus;
+  dailyCapacity: string;
+}) {
+  const username = input.name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "") || randomUUID();
+  const row = await insertRow<UserRow>("internal_users", {
+    username,
+    email: `${username}@tela88.local`,
+    name: input.name,
+    role: "collaborator",
+    function_role: input.role,
+    status: input.status,
+    daily_capacity: input.dailyCapacity,
+    password_hash: "pending-password-reset",
+  });
+
+  if (!row) {
+    throw new Error("Nao foi possivel criar o colaborador.");
+  }
+
+  return mapTeamMember(row);
+}
+
+export async function createManualClient(input: {
+  name: string;
+  email: string;
+  company: string;
+  revenue: string;
+  challenge: string;
+  focusArea: string;
+  clientStage: ClientStage;
+  packName: string;
+  packDescription: string;
+  setupFee: string;
+  monthlyFee: string;
+  notes: string;
+  scheduledAt: string | null;
+  services: ServiceId[];
+  serviceStages: ServiceStageMap;
+}) {
+  const row = await insertRow<ClientRow>("clients", {
+    request_id: `manual-${randomUUID()}`,
+    name: input.name,
+    email: input.email,
+    company: input.company,
+    revenue: input.revenue,
+    challenge: input.challenge,
+    focus_area: input.focusArea,
+    client_stage: input.clientStage,
+    pack_name: input.packName,
+    pack_description: input.packDescription,
+    setup_fee: input.setupFee,
+    monthly_fee: input.monthlyFee,
+    internal_notes: input.notes,
+    scheduled_at: input.scheduledAt,
+  });
+
+  if (!row) {
+    throw new Error("Nao foi possivel criar o cliente.");
+  }
+
+  await Promise.all(
+    input.services.map((serviceId) =>
+      insertRow<ClientServiceRow>("client_services", {
+        client_id: row.id,
+        service_id: serviceId,
+        stage: input.serviceStages[serviceId] ?? "planeado",
+      }),
+    ),
+  );
+
+  return getClientById(row.id);
 }
 
 export async function updateTask(input: {
@@ -427,40 +488,23 @@ export async function updateTask(input: {
   assigneeId: string;
   dueDate: string | null;
 }) {
-  const data = await readData();
-  const task = data.tasks.find((item) => item.id === input.id);
+  const rows = await updateRows<TaskRow>(
+    "team_tasks",
+    { id: input.id },
+    {
+      status: input.status,
+      priority: input.priority,
+      assignee_id: input.assigneeId || null,
+      due_date: input.dueDate,
+      updated_at: new Date().toISOString(),
+    },
+  );
 
-  if (!task) {
-    throw new Error("Tarefa não encontrada.");
+  if (!rows[0]) {
+    throw new Error("Tarefa nao encontrada.");
   }
 
-  task.status = input.status;
-  task.priority = input.priority;
-  task.assigneeId = input.assigneeId;
-  task.dueDate = input.dueDate;
-
-  await writeData(data);
-  return task;
-}
-
-export async function createTeamMember(input: {
-  name: string;
-  role: string;
-  status: TeamMemberStatus;
-  dailyCapacity: string;
-}) {
-  const data = await readData();
-  const member = normalizeTeamMember({
-    id: randomUUID(),
-    name: input.name,
-    role: input.role,
-    status: input.status,
-    dailyCapacity: input.dailyCapacity,
-  });
-
-  data.teamMembers.unshift(member);
-  await writeData(data);
-  return member;
+  return mapTask(rows[0]);
 }
 
 export async function createTask(input: {
@@ -473,20 +517,20 @@ export async function createTask(input: {
   clientId: string | null;
   serviceId: ServiceId | null;
 }) {
-  const data = await readData();
-  const task = normalizeTask({
-    id: randomUUID(),
+  const row = await insertRow<TaskRow>("team_tasks", {
     title: input.title,
     description: input.description,
     status: input.status,
     priority: input.priority,
-    assigneeId: input.assigneeId,
-    dueDate: input.dueDate,
-    clientId: input.clientId,
-    serviceId: input.serviceId,
+    assignee_id: input.assigneeId || null,
+    due_date: input.dueDate,
+    client_id: input.clientId,
+    service_id: input.serviceId,
   });
 
-  data.tasks.unshift(task);
-  await writeData(data);
-  return task;
+  if (!row) {
+    throw new Error("Nao foi possivel criar a tarefa.");
+  }
+
+  return mapTask(row);
 }

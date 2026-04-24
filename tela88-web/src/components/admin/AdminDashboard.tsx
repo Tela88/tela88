@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import ManualClientCreateModal from "@/components/admin/ManualClientCreateModal";
 import MeetingStageActions from "@/components/admin/MeetingStageActions";
 import PendingRequestActions from "@/components/admin/PendingRequestActions";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
@@ -12,12 +13,21 @@ import {
   clientStageLabels,
   focusAreaLabels,
   getServiceLabel,
+  serviceDeliveryStageLabels,
   taskStatusLabels,
   teamMemberStatusLabels,
 } from "@/lib/service-catalog";
-import type { ClientRecord, ConsultationRequest, TeamMember, TeamTask } from "@/lib/crm-types";
+import type {
+  AuthenticatedUser,
+  ClientRecord,
+  ConsultationRequest,
+  ServiceDeliveryStage,
+  ServiceId,
+  TeamMember,
+  TeamTask,
+} from "@/lib/crm-types";
 
-type DashboardTab = "overview" | "pending" | "meetings" | "clients" | "team";
+type DashboardTab = "tasks" | "my-zone" | "services" | "clients" | "meetings" | "pending" | "overview";
 
 type AdminDashboardProps = {
   pendingRequests: ConsultationRequest[];
@@ -28,12 +38,21 @@ type AdminDashboardProps = {
   teamMembers: TeamMember[];
   tasks: TeamTask[];
   activeTab: DashboardTab;
+  currentUser: AuthenticatedUser;
 };
 
 type DragPayload =
   | { type: "meeting"; id: string }
   | { type: "client"; id: string }
   | { type: "task"; id: string };
+
+type ServiceWorkItem = {
+  key: string;
+  id: ServiceId;
+  stage: ServiceDeliveryStage;
+  client: ClientRecord;
+  activeTasks: TeamTask[];
+};
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-PT", {
@@ -80,6 +99,7 @@ export default function AdminDashboard({
   teamMembers,
   tasks,
   activeTab,
+  currentUser,
 }: AdminDashboardProps) {
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
@@ -87,8 +107,37 @@ export default function AdminDashboard({
   const clientsInProcess = clients.filter((item) => item.clientStage === "em-processo");
   const clientsInProduction = clients.filter((item) => item.clientStage === "em-producao");
   const totalServicesActive = clients.reduce((accumulator, client) => accumulator + client.services.length, 0);
+  const openTasks = tasks.filter((task) => task.status !== "feito");
   const tasksDueToday = tasks.filter((task) => task.status === "hoje");
   const tasksInReview = tasks.filter((task) => task.status === "em-revisao");
+  const highPriorityOpenTasks = openTasks.filter((task) => task.priority === "alta");
+  const myTasks = tasks.filter((task) => task.assigneeId === currentUser.id);
+  const myOpenTasks = myTasks.filter((task) => task.status !== "feito");
+  const myClientIds = new Set(myTasks.map((task) => task.clientId).filter(Boolean));
+  const myClients = clients.filter((client) => myClientIds.has(client.id));
+  const myServiceKeys = new Set(
+    myTasks
+      .filter((task) => task.clientId && task.serviceId)
+      .map((task) => `${task.clientId}:${task.serviceId}`),
+  );
+  const serviceWorkItems = clients.flatMap<ServiceWorkItem>((client) =>
+    client.services.map((service) => ({
+      key: `${client.id}-${service.id}`,
+      id: service.id,
+      stage: service.stage,
+      client,
+      activeTasks: tasks.filter(
+        (task) => task.clientId === client.id && task.serviceId === service.id && task.status !== "feito",
+      ),
+    })),
+  );
+  const myServices = serviceWorkItems.filter((service) => myServiceKeys.has(`${service.client.id}:${service.id}`));
+  const servicesByStage: Record<ServiceDeliveryStage, ServiceWorkItem[]> = {
+    planeado: serviceWorkItems.filter((service) => service.stage === "planeado"),
+    "em-processo": serviceWorkItems.filter((service) => service.stage === "em-processo"),
+    "em-producao": serviceWorkItems.filter((service) => service.stage === "em-producao"),
+    concluido: serviceWorkItems.filter((service) => service.stage === "concluido"),
+  };
   const tasksByStatus = {
     hoje: tasks.filter((task) => task.status === "hoje"),
     "em-curso": tasks.filter((task) => task.status === "em-curso"),
@@ -183,10 +232,10 @@ export default function AdminDashboard({
     <div className="mt-10">
       <div className="grid gap-4 md:grid-cols-4">
         {[
-          { label: "Pedidos pendentes", value: String(pendingRequests.length).padStart(2, "0") },
-          { label: "Reunioes agendadas", value: String(scheduledMeetings.length).padStart(2, "0") },
-          { label: "Clientes ativos", value: String(clients.length).padStart(2, "0") },
+          { label: "Tarefas abertas", value: String(openTasks.length).padStart(2, "0") },
+          { label: "Prioridade alta", value: String(highPriorityOpenTasks.length).padStart(2, "0") },
           { label: "Servicos ativos", value: String(totalServicesActive).padStart(2, "0") },
+          { label: "Clientes ativos", value: String(clients.length).padStart(2, "0") },
         ].map((card) => (
           <div key={card.label} className="border border-outline-variant/15 bg-surface-container-low p-6">
             <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
@@ -275,7 +324,7 @@ export default function AdminDashboard({
               <div className="border border-outline-variant/15 bg-surface-container-low p-6">
                 <div className="mb-4 flex items-center justify-between">
                   <h3 className="font-headline text-2xl font-bold text-on-surface">Equipa hoje</h3>
-                  <Link href="/area-reservada?tab=team" className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
+                  <Link href="/area-reservada?tab=tasks" className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
                     Ver quadro
                   </Link>
                 </div>
@@ -453,6 +502,180 @@ export default function AdminDashboard({
           </div>
         ) : null}
 
+        {activeTab === "my-zone" ? (
+          <div className="space-y-8">
+            <div className="grid gap-4 md:grid-cols-4">
+              {[
+                { label: "Tarefas abertas", value: String(myOpenTasks.length).padStart(2, "0") },
+                { label: "Clientes ligados", value: String(myClients.length).padStart(2, "0") },
+                { label: "Servicos ligados", value: String(myServices.length).padStart(2, "0") },
+                { label: "Role", value: currentUser.functionRole || currentUser.role },
+              ].map((card) => (
+                <div key={card.label} className="border border-outline-variant/15 bg-surface-container-low p-5">
+                  <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    {card.label}
+                  </p>
+                  <p className="mt-3 font-headline text-2xl font-bold text-on-surface">{card.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.42fr)]">
+              <div>
+                <div className="mb-5 flex items-center justify-between">
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">As minhas tarefas</h2>
+                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    {currentUser.name}
+                  </span>
+                </div>
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  {myTasks.length === 0 ? (
+                    <div className="border border-dashed border-outline-variant/15 bg-surface-container-low px-4 py-8 text-center xl:col-span-2">
+                      <p className="font-body text-sm text-on-surface/45">Ainda nao tens tarefas atribuidas.</p>
+                    </div>
+                  ) : (
+                    myTasks.map((task) => (
+                      <TaskCardEditor key={task.id} task={task} teamMembers={teamMembers} clients={clients} />
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <aside className="space-y-6">
+                <div className="border border-outline-variant/15 bg-surface-container-low p-5">
+                  <h3 className="font-headline text-2xl font-bold text-on-surface">Clientes ligados</h3>
+                  <div className="mt-4 space-y-3">
+                    {myClients.length === 0 ? (
+                      <p className="font-body text-sm text-on-surface/45">Sem clientes associados por tarefa.</p>
+                    ) : (
+                      myClients.map((client) => (
+                        <Link
+                          key={client.id}
+                          href={`/area-reservada/clientes/${client.id}`}
+                          className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
+                        >
+                          <p className="font-headline text-lg font-bold text-on-surface">
+                            {client.company || client.name}
+                          </p>
+                          <p className="mt-1 font-body text-sm text-on-surface/55">
+                            {client.packName || "Pack por definir"}
+                          </p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="border border-outline-variant/15 bg-surface-container-low p-5">
+                  <h3 className="font-headline text-2xl font-bold text-on-surface">Servicos ligados</h3>
+                  <div className="mt-4 space-y-3">
+                    {myServices.length === 0 ? (
+                      <p className="font-body text-sm text-on-surface/45">Sem servicos associados por tarefa.</p>
+                    ) : (
+                      myServices.map((service) => (
+                        <Link
+                          key={service.key}
+                          href={`/area-reservada/clientes/${service.client.id}`}
+                          className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
+                        >
+                          <p className="font-headline text-lg font-bold text-on-surface">
+                            {getServiceLabel(service.id)}
+                          </p>
+                          <p className="mt-1 font-body text-sm text-on-surface/55">
+                            {service.client.company || service.client.name}
+                          </p>
+                          <p className="mt-2 font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                            {serviceDeliveryStageLabels[service.stage]}
+                          </p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        ) : null}
+
+        {activeTab === "services" ? (
+          <div className="space-y-8">
+            <div>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">Gestao de servicos</h2>
+                  <p className="mt-2 max-w-3xl font-body text-sm leading-relaxed text-on-surface/55">
+                    Vista agregada dos servicos vendidos por cliente. Cada cartao mostra estado, cliente e tarefas
+                    abertas associadas.
+                  </p>
+                </div>
+                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                  Tarefas ligadas a entregas
+                </span>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-4">
+                {(Object.keys(servicesByStage) as ServiceDeliveryStage[]).map((stage) => (
+                  <div key={stage} className="border border-outline-variant/15 bg-surface-container-low p-5">
+                    <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                      {serviceDeliveryStageLabels[stage]}
+                    </p>
+                    <p className="mt-3 font-headline text-3xl font-bold text-on-surface">
+                      {String(servicesByStage[stage].length).padStart(2, "0")}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-4">
+              {(Object.keys(servicesByStage) as ServiceDeliveryStage[]).map((stage) => (
+                <div key={stage} className="border border-outline-variant/15 bg-surface-container-low p-4">
+                  <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">
+                    <p className="font-headline text-xl font-bold text-on-surface">
+                      {serviceDeliveryStageLabels[stage]}
+                    </p>
+                    <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                      {String(servicesByStage[stage].length).padStart(2, "0")}
+                    </span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {servicesByStage[stage].length === 0 ? (
+                      <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
+                        <p className="font-body text-xs text-on-surface/45">Sem servicos nesta fase.</p>
+                      </div>
+                    ) : (
+                      servicesByStage[stage].map((service) => (
+                        <Link
+                          key={service.key}
+                          href={`/area-reservada/clientes/${service.client.id}`}
+                          className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="font-headline text-lg font-bold text-on-surface">
+                              {getServiceLabel(service.id)}
+                            </p>
+                            <span className="shrink-0 border border-primary-container/20 px-2 py-1 font-label text-[10px] uppercase tracking-[0.16em] text-primary-container">
+                              {service.activeTasks.length} tarefas
+                            </span>
+                          </div>
+                          <p className="mt-2 font-body text-sm text-on-surface/55">
+                            {service.client.company || service.client.name}
+                          </p>
+                          <p className="mt-3 font-body text-xs leading-relaxed text-on-surface/45">
+                            {service.client.packName || "Pack por definir"}
+                          </p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
         {activeTab === "clients" ? (
           <div className="space-y-8">
             <div>
@@ -548,11 +771,11 @@ export default function AdminDashboard({
           </div>
         ) : null}
 
-        {activeTab === "team" ? (
+        {activeTab === "tasks" ? (
           <div className="space-y-8">
             <div>
               <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-headline text-3xl font-bold text-on-surface">Equipa</h2>
+                <h2 className="font-headline text-3xl font-bold text-on-surface">Tarefas e equipa</h2>
                 <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
                   Visao tipo ClickUp
                 </span>
@@ -639,3 +862,4 @@ export default function AdminDashboard({
     </div>
   );
 }
+

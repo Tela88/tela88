@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSessionToken, getSessionCookieName, validateAdminCredentials } from "@/lib/auth";
+import { createSessionToken, getSessionCookieName, validateUserCredentials } from "@/lib/auth";
 
 export async function POST(request: Request) {
   const payload = (await request.json().catch(() => null)) as
@@ -13,14 +13,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Preenche o utilizador e a palavra-passe." }, { status: 400 });
   }
 
-  if (!validateAdminCredentials(username, password)) {
-    return NextResponse.json({ error: "Credenciais inválidas." }, { status: 401 });
+  const user = await validateUserCredentials(username, password);
+
+  if (!user) {
+    return NextResponse.json({ error: "Credenciais invalidas." }, { status: 401 });
   }
 
   const response = NextResponse.json({ success: true });
   response.cookies.set({
     name: getSessionCookieName(),
-    value: createSessionToken(username),
+    value: createSessionToken(user),
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
