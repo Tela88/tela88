@@ -3,14 +3,17 @@ import { getAuthenticatedAdmin } from "@/lib/auth";
 import { getCrmDashboardData } from "@/lib/crm-store";
 import { redirect } from "next/navigation";
 
-type DashboardTab = "tasks" | "my-zone" | "services" | "clients" | "meetings" | "pending" | "overview";
+type DashboardTab = "tasks" | "my-zone" | "professionals" | "services" | "clients" | "meetings" | "pending" | "overview";
+
+const adminTabs = ["tasks", "my-zone", "professionals", "services", "clients", "meetings", "pending", "overview"] as const;
+const secretariaTabs = ["tasks", "my-zone", "professionals", "clients", "meetings", "pending"] as const;
+const collaboratorTabs = ["tasks", "my-zone", "clients", "meetings", "pending"] as const;
 
 export default async function ReservedAreaPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const validTabs = new Set(["tasks", "my-zone", "services", "clients", "meetings", "pending", "overview"]);
   const admin = await getAuthenticatedAdmin();
 
   if (!admin) {
@@ -23,6 +26,9 @@ export default async function ReservedAreaPage({
   const attendedMeetings = requests.filter((item) => item.status === "atendido");
   const clientsFromMeetings = requests.filter((item) => item.status === "cliente");
   const params = await searchParams;
+  const allowedTabs =
+    admin.role === "admin" ? adminTabs : admin.role === "secretaria" ? secretariaTabs : collaboratorTabs;
+  const validTabs = new Set(allowedTabs as readonly string[]);
   const activeTab = validTabs.has(params.tab ?? "") ? (params.tab as DashboardTab) : "tasks";
 
   return (

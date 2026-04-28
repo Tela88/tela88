@@ -28,6 +28,7 @@ type UserRow = {
   name: string;
   role: InternalUserRole;
   function_role: string;
+  avatar_url?: string | null;
   status: TeamMemberStatus;
   daily_capacity: string;
 };
@@ -73,6 +74,12 @@ type ClientServiceRow = {
   stage: ServiceDeliveryStage;
 };
 
+type InternalUserServiceRow = {
+  id: string;
+  user_id: string;
+  service_id: ServiceId;
+};
+
 type ServiceSubserviceRow = {
   id: string;
   service_id: ServiceId;
@@ -87,12 +94,38 @@ type TaskRow = {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  priority_margin_days: number | null;
   assignee_id: string | null;
   due_date: string | null;
   client_id: string | null;
   service_id: ServiceId | null;
   sub_service_id: string | null;
 };
+
+function getEffectiveTaskPriority(
+  configuredPriority: TaskPriority,
+  dueDate: string | null,
+  priorityMarginDays: number | null,
+) {
+  if (!dueDate || priorityMarginDays === null || priorityMarginDays < 0) {
+    return configuredPriority;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const deadline = new Date(dueDate);
+  deadline.setHours(0, 0, 0, 0);
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysUntilDeadline = Math.floor((deadline.getTime() - today.getTime()) / msPerDay);
+
+  if (daysUntilDeadline <= priorityMarginDays) {
+    return "alta";
+  }
+
+  return configuredPriority;
+}
 
 function mapRequest(row: RequestRow): ConsultationRequest {
   return {
@@ -111,14 +144,16 @@ function mapRequest(row: RequestRow): ConsultationRequest {
   };
 }
 
-function mapTeamMember(row: UserRow): TeamMember {
+function mapTeamMember(row: UserRow, assignedServiceIds: ServiceId[] = []): TeamMember {
   return {
     id: row.id,
     name: row.name,
     role: row.function_role,
     accessRole: row.role,
+    assignedServiceIds,
     username: row.username,
     email: row.email,
+    avatarUrl: row.avatar_url ?? null,
     status: row.status,
     dailyCapacity: row.daily_capacity,
   };
@@ -162,12 +197,16 @@ function mapSubservice(row: ServiceSubserviceRow): ServiceSubservice {
 }
 
 function mapTask(row: TaskRow): TeamTask {
+  const effectivePriority = getEffectiveTaskPriority(row.priority, row.due_date, row.priority_margin_days);
+
   return {
     id: row.id,
     title: row.title,
     description: row.description,
     status: row.status,
-    priority: row.priority,
+    priority: effectivePriority,
+    configuredPriority: row.priority,
+    priorityMarginDays: row.priority_margin_days,
     assigneeId: row.assignee_id ?? "",
     dueDate: row.due_date,
     clientId: row.client_id,
@@ -189,6 +228,12 @@ function createUsernameSlug(value: string) {
 
 async function getClientServices() {
   return selectRows<ClientServiceRow>("client_services", {
+    order: "created_at.asc",
+  });
+}
+
+async function getInternalUserServices() {
+  return selectRows<InternalUserServiceRow>("internal_user_services", {
     order: "created_at.asc",
   });
 }
@@ -239,11 +284,21 @@ export async function getClients() {
 }
 
 export async function getTeamMembers() {
-  const rows = await selectRows<UserRow>("internal_users", {
-    order: "created_at.asc",
-  });
+  const [rows, assignments] = await Promise.all([
+    selectRows<UserRow>("internal_users", {
+      order: "created_at.asc",
+    }),
+    getInternalUserServices(),
+  ]);
 
-  return rows.filter((user) => user.role === "collaborator").map(mapTeamMember);
+  return rows
+    .filter((user) => user.role !== "admin")
+    .map((user) =>
+      mapTeamMember(
+        user,
+        assignments.filter((assignment) => assignment.user_id === user.id).map((assignment) => assignment.service_id),
+      ),
+    );
 }
 
 export async function getTasks() {
@@ -453,7 +508,9 @@ export async function createTeamMember(input: {
   username?: string;
   email?: string;
   password: string;
+  accessRole: Exclude<InternalUserRole, "admin">;
   role: string;
+  serviceIds: ServiceId[];
   status: TeamMemberStatus;
   dailyCapacity: string;
 }) {
@@ -462,7 +519,7 @@ export async function createTeamMember(input: {
     username,
     email: input.email?.trim() || `${username}@tela88.local`,
     name: input.name,
-    role: "collaborator",
+    role: input.accessRole,
     function_role: input.role,
     status: input.status,
     daily_capacity: input.dailyCapacity,
@@ -473,7 +530,16 @@ export async function createTeamMember(input: {
     throw new Error("Nao foi possivel criar o colaborador.");
   }
 
-  return mapTeamMember(row);
+  await Promise.all(
+    input.serviceIds.map((serviceId) =>
+      insertRow<InternalUserServiceRow>("internal_user_services", {
+        user_id: row.id,
+        service_id: serviceId,
+      }),
+    ),
+  );
+
+  return mapTeamMember(row, input.serviceIds);
 }
 
 export async function updateTeamMember(input: {
@@ -481,7 +547,9 @@ export async function updateTeamMember(input: {
   name: string;
   username: string;
   email: string;
+  accessRole: Exclude<InternalUserRole, "admin">;
   role: string;
+  serviceIds: ServiceId[];
   status: TeamMemberStatus;
   dailyCapacity: string;
   password?: string;
@@ -490,7 +558,7 @@ export async function updateTeamMember(input: {
     filters: { id: input.id },
   });
 
-  if (!existing || existing.role !== "collaborator") {
+  if (!existing || existing.role === "admin") {
     throw new Error("Colaborador nao encontrado.");
   }
 
@@ -498,6 +566,7 @@ export async function updateTeamMember(input: {
     name: input.name.trim(),
     username: createUsernameSlug(input.username),
     email: input.email.trim(),
+    role: input.accessRole,
     function_role: input.role.trim(),
     status: input.status,
     daily_capacity: input.dailyCapacity.trim(),
@@ -514,7 +583,17 @@ export async function updateTeamMember(input: {
     throw new Error("Nao foi possivel atualizar o colaborador.");
   }
 
-  return mapTeamMember(rows[0]);
+  await deleteRows<InternalUserServiceRow>("internal_user_services", { user_id: input.id });
+  await Promise.all(
+    input.serviceIds.map((serviceId) =>
+      insertRow<InternalUserServiceRow>("internal_user_services", {
+        user_id: input.id,
+        service_id: serviceId,
+      }),
+    ),
+  );
+
+  return mapTeamMember(rows[0], input.serviceIds);
 }
 
 export async function deleteTeamMember(id: string) {
@@ -522,10 +601,11 @@ export async function deleteTeamMember(id: string) {
     filters: { id },
   });
 
-  if (!existing || existing.role !== "collaborator") {
+  if (!existing || existing.role === "admin") {
     throw new Error("Colaborador nao encontrado.");
   }
 
+  await deleteRows<InternalUserServiceRow>("internal_user_services", { user_id: id });
   const deleted = await deleteRows<UserRow>("internal_users", { id });
 
   if (!deleted.length) {
@@ -533,6 +613,22 @@ export async function deleteTeamMember(id: string) {
   }
 
   return { id };
+}
+
+export async function updateUserProfile(input: {
+  id: string;
+  avatarUrl: string | null;
+}) {
+  const rows = await updateRows<UserRow>("internal_users", { id: input.id }, {
+    avatar_url: input.avatarUrl,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (!rows[0]) {
+    throw new Error("Nao foi possivel atualizar o perfil.");
+  }
+
+  return mapTeamMember(rows[0]);
 }
 
 export async function createManualClient(input: {
@@ -626,22 +722,33 @@ export async function deleteServiceSubservice(id: string) {
 export async function updateTask(input: {
   id: string;
   status: TaskStatus;
-  priority: TaskPriority;
-  assigneeId: string;
-  dueDate: string | null;
-  serviceId: ServiceId | null;
-  subServiceId: string | null;
+  priority?: TaskPriority;
+  priorityMarginDays?: number | null;
+  assigneeId?: string;
+  dueDate?: string | null;
+  serviceId?: ServiceId | null;
+  subServiceId?: string | null;
 }) {
+  const existing = await selectSingle<TaskRow>("team_tasks", {
+    filters: { id: input.id },
+  });
+
+  if (!existing) {
+    throw new Error("Tarefa nao encontrada.");
+  }
+
   const rows = await updateRows<TaskRow>(
     "team_tasks",
     { id: input.id },
     {
       status: input.status,
-      priority: input.priority,
-      assignee_id: input.assigneeId || null,
-      due_date: input.dueDate,
-      service_id: input.serviceId,
-      sub_service_id: input.subServiceId,
+      priority: input.priority ?? existing.priority,
+      priority_margin_days:
+        input.priorityMarginDays === undefined ? existing.priority_margin_days : input.priorityMarginDays,
+      assignee_id: input.assigneeId === undefined ? existing.assignee_id : input.assigneeId || null,
+      due_date: input.dueDate === undefined ? existing.due_date : input.dueDate,
+      service_id: input.serviceId === undefined ? existing.service_id : input.serviceId,
+      sub_service_id: input.subServiceId === undefined ? existing.sub_service_id : input.subServiceId,
       updated_at: new Date().toISOString(),
     },
   );
@@ -658,6 +765,7 @@ export async function createTask(input: {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  priorityMarginDays?: number | null;
   assigneeId: string;
   dueDate: string | null;
   clientId: string | null;
@@ -669,6 +777,7 @@ export async function createTask(input: {
     description: input.description,
     status: input.status,
     priority: input.priority,
+    priority_margin_days: input.priorityMarginDays ?? null,
     assignee_id: input.assigneeId || null,
     due_date: input.dueDate,
     client_id: input.clientId,

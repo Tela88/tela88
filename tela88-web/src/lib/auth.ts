@@ -13,6 +13,7 @@ type InternalUserRow = {
   name: string;
   role: InternalUserRole;
   function_role: string;
+  avatar_url: string | null;
   status: TeamMemberStatus;
   daily_capacity: string;
   password_hash: string;
@@ -62,6 +63,7 @@ function mapUser(row: InternalUserRow): AuthenticatedUser {
     email: row.email,
     role: row.role,
     functionRole: row.function_role,
+    avatarUrl: row.avatar_url,
   };
 }
 

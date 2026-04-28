@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdminActionRequest } from "@/lib/auth";
 import { deleteTeamMember, updateTeamMember } from "@/lib/crm-store";
-import type { TeamMemberStatus } from "@/lib/crm-types";
+import type { InternalUserRole, ServiceId, TeamMemberStatus } from "@/lib/crm-types";
 
 export async function PUT(
   request: Request,
@@ -9,8 +9,8 @@ export async function PUT(
 ) {
   const { admin, errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
-  if (admin?.role !== "admin") {
-    return NextResponse.json({ error: "Apenas admins podem editar colaboradores." }, { status: 403 });
+  if (admin?.role !== "admin" && admin?.role !== "secretaria") {
+    return NextResponse.json({ error: "Apenas admin e secretaria podem editar colaboradores." }, { status: 403 });
   }
 
   const { id } = await context.params;
@@ -20,7 +20,9 @@ export async function PUT(
         username?: string;
         email?: string;
         password?: string;
+        accessRole?: InternalUserRole;
         role?: string;
+        serviceIds?: ServiceId[];
         status?: TeamMemberStatus;
         dailyCapacity?: string;
       }
@@ -37,7 +39,9 @@ export async function PUT(
       username: payload.username.trim(),
       email: payload.email.trim(),
       password: payload.password?.trim(),
+      accessRole: payload.accessRole === "secretaria" ? "secretaria" : "collaborator",
       role: payload.role.trim(),
+      serviceIds: payload.serviceIds ?? [],
       status: payload.status ?? "disponivel",
       dailyCapacity: payload.dailyCapacity?.trim() || "Sem capacidade definida",
     });
@@ -57,8 +61,8 @@ export async function DELETE(
 ) {
   const { admin, errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
-  if (admin?.role !== "admin") {
-    return NextResponse.json({ error: "Apenas admins podem eliminar colaboradores." }, { status: 403 });
+  if (admin?.role !== "admin" && admin?.role !== "secretaria") {
+    return NextResponse.json({ error: "Apenas admin e secretaria podem eliminar colaboradores." }, { status: 403 });
   }
 
   try {

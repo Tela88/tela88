@@ -1,9 +1,11 @@
 import AreaReservadaShell from "@/components/admin/AreaReservadaShell";
+import { getAuthenticatedAdmin } from "@/lib/auth";
 
-export default function AreaReservadaLayout({
+export default async function AreaReservadaLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AreaReservadaShell>{children}</AreaReservadaShell>;
+  const initialUser = await getAuthenticatedAdmin();
+  return <AreaReservadaShell initialUser={initialUser}>{children}</AreaReservadaShell>;
 }

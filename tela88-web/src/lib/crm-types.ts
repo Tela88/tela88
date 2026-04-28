@@ -15,7 +15,7 @@ export type ServiceStageMap = Partial<Record<ServiceId, ServiceDeliveryStage>>;
 export type TeamMemberStatus = "disponivel" | "ocupado" | "offline";
 export type TaskStatus = "hoje" | "planeamento" | "em-producao" | "em-revisao" | "feito";
 export type TaskPriority = "alta" | "media" | "baixa";
-export type InternalUserRole = "admin" | "collaborator";
+export type InternalUserRole = "admin" | "collaborator" | "secretaria";
 
 export type PackService = {
   id: ServiceId;
@@ -35,8 +35,10 @@ export type TeamMember = {
   name: string;
   role: string;
   accessRole?: InternalUserRole;
+  assignedServiceIds: ServiceId[];
   username?: string;
   email?: string;
+  avatarUrl?: string | null;
   status: TeamMemberStatus;
   dailyCapacity: string;
 };
@@ -48,6 +50,7 @@ export type AuthenticatedUser = {
   email: string;
   role: InternalUserRole;
   functionRole: string;
+  avatarUrl?: string | null;
 };
 
 export type TeamTask = {
@@ -56,6 +59,8 @@ export type TeamTask = {
   description: string;
   status: TaskStatus;
   priority: TaskPriority;
+  configuredPriority: TaskPriority;
+  priorityMarginDays: number | null;
   assigneeId: string;
   dueDate: string | null;
   clientId: string | null;

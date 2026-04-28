@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import LogoutButton from "@/components/admin/LogoutButton";
+import type { AuthenticatedUser } from "@/lib/crm-types";
 
 const dashboardItems = [
   { id: "tasks", label: "Tarefas" },
   { id: "my-zone", label: "Minha Zona" },
+  { id: "professionals", label: "Profissionais" },
   { id: "services", label: "Servicos" },
   { id: "clients", label: "Clientes" },
   { id: "meetings", label: "Reunioes" },
@@ -14,14 +16,21 @@ const dashboardItems = [
   { id: "overview", label: "Painel geral" },
 ] as const;
 
-export default function AdminSidebar() {
+export default function AdminSidebar({ initialUser }: { initialUser: AuthenticatedUser | null }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab") ?? "tasks";
   const isClientPage = pathname.startsWith("/area-reservada/clientes/");
+  const visibleItems = dashboardItems.filter((item) =>
+    initialUser?.role === "admin"
+      ? true
+      : initialUser?.role === "secretaria"
+        ? item.id !== "services" && item.id !== "overview"
+        : item.id !== "services" && item.id !== "overview" && item.id !== "professionals",
+  );
 
   return (
-    <aside className="flex min-h-screen flex-col border-r border-outline-variant/15 bg-surface-container-low px-4 py-6">
+    <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-outline-variant/15 bg-surface-container-low px-4 py-6">
       <div className="border-b border-outline-variant/12 pb-5">
         <p className="font-label text-[10px] uppercase tracking-[0.28em] text-primary-container">
           Tela 88
@@ -32,8 +41,32 @@ export default function AdminSidebar() {
         </p>
       </div>
 
+      {initialUser ? (
+        <div className="mt-5 border-b border-outline-variant/12 pb-5">
+          <div className="flex items-center gap-3">
+            {initialUser.avatarUrl ? (
+              <img
+                src={initialUser.avatarUrl}
+                alt={initialUser.name}
+                className="h-11 w-11 rounded-full border border-outline-variant/20 object-cover"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/20 bg-surface text-sm font-bold text-primary-container">
+                {initialUser.name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-headline text-base font-bold text-on-surface">{initialUser.name}</p>
+              <p className="truncate font-body text-sm text-on-surface/55">
+                {initialUser.functionRole || initialUser.role}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <nav className="mt-6 space-y-2">
-        {dashboardItems.map((item) => {
+        {visibleItems.map((item) => {
           const active = !isClientPage && currentTab === item.id;
 
           return (

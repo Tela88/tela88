@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import ManualClientCreateModal from "@/components/admin/ManualClientCreateModal";
 import MeetingStageActions from "@/components/admin/MeetingStageActions";
+import MyZoneProfileCard from "@/components/admin/MyZoneProfileCard";
 import PendingRequestActions from "@/components/admin/PendingRequestActions";
 import ServiceSubservicePanel from "@/components/admin/ServiceSubservicePanel";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
@@ -15,6 +16,7 @@ import {
   clientStageLabels,
   focusAreaLabels,
   getServiceLabel,
+  internalUserRoleLabels,
   serviceDeliveryStageLabels,
   taskStatusLabels,
   teamMemberStatusLabels,
@@ -30,7 +32,7 @@ import type {
   TeamTask,
 } from "@/lib/crm-types";
 
-type DashboardTab = "tasks" | "my-zone" | "services" | "clients" | "meetings" | "pending" | "overview";
+type DashboardTab = "tasks" | "my-zone" | "professionals" | "services" | "clients" | "meetings" | "pending" | "overview";
 
 type AdminDashboardProps = {
   pendingRequests: ConsultationRequest[];
@@ -57,6 +59,23 @@ type ServiceWorkItem = {
   client: ClientRecord;
   activeTasks: TeamTask[];
 };
+
+const taskPriorityOrder: Record<TeamTask["priority"], number> = {
+  alta: 0,
+  media: 1,
+  baixa: 2,
+};
+
+function sortTasksByPriority(items: TeamTask[]) {
+  return [...items].sort((left, right) => {
+    const priorityDelta = taskPriorityOrder[left.priority] - taskPriorityOrder[right.priority];
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const leftDate = left.dueDate ? new Date(left.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const rightDate = right.dueDate ? new Date(right.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    return leftDate - rightDate;
+  });
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("pt-PT", {
@@ -109,6 +128,7 @@ export default function AdminDashboard({
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
   const isAdmin = currentUser.role === "admin";
+  const canManageProfessionals = currentUser.role === "admin" || currentUser.role === "secretaria";
 
   const clientsInProcess = clients.filter((item) => item.clientStage === "planeamento");
   const clientsInProduction = clients.filter((item) => item.clientStage === "em-producao");
@@ -118,8 +138,8 @@ export default function AdminDashboard({
   const tasksInReview = tasks.filter((task) => task.status === "em-revisao");
   const highPriorityOpenTasks = openTasks.filter((task) => task.priority === "alta");
   const myTasks = tasks.filter((task) => task.assigneeId === currentUser.id);
-  const myOpenTasks = myTasks.filter((task) => task.status !== "feito");
-  const myCompletedTasks = myTasks.filter((task) => task.status === "feito");
+  const myOpenTasks = sortTasksByPriority(myTasks.filter((task) => task.status !== "feito"));
+  const myCompletedTasks = sortTasksByPriority(myTasks.filter((task) => task.status === "feito"));
   const myClientIds = new Set(myTasks.map((task) => task.clientId).filter(Boolean));
   const myClients = clients.filter((client) => myClientIds.has(client.id));
   const myServiceKeys = new Set(
@@ -145,11 +165,11 @@ export default function AdminDashboard({
     concluido: serviceWorkItems.filter((service) => service.stage === "concluido"),
   };
   const tasksByStatus = {
-    hoje: tasks.filter((task) => task.status === "hoje"),
-    planeamento: tasks.filter((task) => task.status === "planeamento"),
-    "em-producao": tasks.filter((task) => task.status === "em-producao"),
-    "em-revisao": tasks.filter((task) => task.status === "em-revisao"),
-    feito: tasks.filter((task) => task.status === "feito"),
+    hoje: sortTasksByPriority(tasks.filter((task) => task.status === "hoje")),
+    planeamento: sortTasksByPriority(tasks.filter((task) => task.status === "planeamento")),
+    "em-producao": sortTasksByPriority(tasks.filter((task) => task.status === "em-producao")),
+    "em-revisao": sortTasksByPriority(tasks.filter((task) => task.status === "em-revisao")),
+    feito: sortTasksByPriority(tasks.filter((task) => task.status === "feito")),
   };
 
   function dragStart(payload: DragPayload) {
@@ -226,14 +246,21 @@ export default function AdminDashboard({
       const task = tasks.find((item) => item.id === payload.id);
       if (!task) return;
       setActiveDropZone(zoneId);
-      await postJson(`/api/admin/tasks/${task.id}`, {
-        status: targetStatus,
-        priority: task.priority,
-        assigneeId: task.assigneeId,
-        dueDate: task.dueDate,
-        serviceId: task.serviceId,
-        subServiceId: task.subServiceId,
-      });
+      await postJson(
+        `/api/admin/tasks/${task.id}`,
+        isAdmin
+          ? {
+              status: targetStatus,
+              priority: task.priority,
+              assigneeId: task.assigneeId,
+              dueDate: task.dueDate,
+              serviceId: task.serviceId,
+              subServiceId: task.subServiceId,
+            }
+          : {
+              status: targetStatus,
+            },
+      );
     };
   }
 
@@ -256,7 +283,7 @@ export default function AdminDashboard({
       </div>
 
       <section className="mt-10 min-w-0">
-        {activeTab === "overview" ? (
+        {activeTab === "overview" && isAdmin ? (
           <div className="space-y-8">
             <div>
               <div className="mb-5 flex items-center justify-between">
@@ -382,6 +409,152 @@ export default function AdminDashboard({
                     </Link>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div className="space-y-8">
+              <div className="grid gap-6 xl:grid-cols-2">
+                <div className="border border-outline-variant/15 bg-surface-container-low p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-headline text-2xl font-bold text-on-surface">Clientes editaveis</h3>
+                    <Link
+                      href="/area-reservada?tab=clients"
+                      className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container"
+                    >
+                      Abrir base
+                    </Link>
+                  </div>
+                  <div className="space-y-3">
+                    {clients.map((client) => (
+                      <Link
+                        key={`overview-client-${client.id}`}
+                        href={`/area-reservada/clientes/${client.id}`}
+                        className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
+                      >
+                        <p className="font-headline text-lg font-bold text-on-surface">
+                          {client.company || client.name}
+                        </p>
+                        <p className="mt-1 font-body text-sm text-on-surface/55">
+                          {client.packName || "Pack por definir"}
+                        </p>
+                        <p className="mt-2 font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                          {clientStageLabels[client.clientStage]}
+                        </p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border border-outline-variant/15 bg-surface-container-low p-6">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h3 className="font-headline text-2xl font-bold text-on-surface">Servicos ativos</h3>
+                    <Link
+                      href="/area-reservada?tab=services"
+                      className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container"
+                    >
+                      Gerir servicos
+                    </Link>
+                  </div>
+                  <div className="space-y-3">
+                    {serviceWorkItems.length === 0 ? (
+                      <div className="border border-dashed border-outline-variant/15 px-4 py-8 text-center">
+                        <p className="font-body text-sm text-on-surface/45">Sem servicos ativos neste momento.</p>
+                      </div>
+                    ) : (
+                      serviceWorkItems.map((service) => (
+                        <Link
+                          key={`overview-service-${service.key}`}
+                          href={`/area-reservada/clientes/${service.client.id}`}
+                          className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-headline text-lg font-bold text-on-surface">
+                                {getServiceLabel(service.id)}
+                              </p>
+                              <p className="mt-1 font-body text-sm text-on-surface/55">
+                                {service.client.company || service.client.name}
+                              </p>
+                            </div>
+                            <span className="shrink-0 border border-primary-container/20 px-2 py-1 font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                              {service.activeTasks.length} tarefas
+                            </span>
+                          </div>
+                          <p className="mt-3 font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                            {serviceDeliveryStageLabels[service.stage]}
+                          </p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border border-outline-variant/15 bg-surface-container-low p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="font-headline text-2xl font-bold text-on-surface">Todas as tarefas</h3>
+                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
+                    Edicao total
+                  </span>
+                </div>
+                {tasks.length === 0 ? (
+                  <div className="border border-dashed border-outline-variant/15 px-4 py-8 text-center">
+                    <p className="font-body text-sm text-on-surface/45">Ainda nao existem tarefas registadas.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <div className="grid min-w-[1200px] gap-4 xl:grid-cols-5">
+                      {(Object.keys(tasksByStatus) as Array<keyof typeof tasksByStatus>).map((statusKey) => {
+                        const zoneId = `overview-task-${statusKey}`;
+
+                        return (
+                          <DropColumn
+                            key={zoneId}
+                            zoneId={zoneId}
+                            activeDropZone={activeDropZone}
+                            onDragOver={columnDragOver(zoneId)}
+                            onDragLeave={columnDragLeave(zoneId)}
+                            onDrop={taskDrop(statusKey, zoneId)}
+                          >
+                            <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">
+                              <p className="font-headline text-lg font-bold text-on-surface">
+                                {taskStatusLabels[statusKey]}
+                              </p>
+                              <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                                {String(tasksByStatus[statusKey].length).padStart(2, "0")}
+                              </span>
+                            </div>
+
+                            <div className="space-y-3">
+                              {tasksByStatus[statusKey].length === 0 ? (
+                                <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
+                                  <p className="font-body text-xs text-on-surface/45">Larga aqui uma tarefa.</p>
+                                </div>
+                              ) : (
+                                tasksByStatus[statusKey].map((task) => (
+                                  <div
+                                    key={`overview-${task.id}`}
+                                    draggable
+                                    onDragStart={dragStart({ type: "task", id: task.id })}
+                                    className="cursor-grab active:cursor-grabbing"
+                                  >
+                                    <TaskCardEditor
+                                      task={task}
+                                      teamMembers={teamMembers}
+                                      clients={clients}
+                                      subservices={serviceSubservices}
+                                      currentUser={currentUser}
+                                    />
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </DropColumn>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -533,9 +706,25 @@ export default function AdminDashboard({
               <div>
                 <div className="mb-5 flex items-center justify-between">
                   <h2 className="font-headline text-3xl font-bold text-on-surface">As minhas tarefas</h2>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                    {currentUser.name}
-                  </span>
+                  <div className="flex items-center gap-3">
+                    {currentUser.avatarUrl ? (
+                      <img
+                        src={currentUser.avatarUrl}
+                        alt={currentUser.name}
+                        className="h-10 w-10 rounded-full border border-outline-variant/20 object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full border border-outline-variant/20 bg-surface-container-low text-xs font-bold text-primary-container">
+                        {currentUser.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div className="text-right">
+                      <p className="font-body text-sm text-on-surface">{currentUser.name}</p>
+                      <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                        {currentUser.functionRole || currentUser.role}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid gap-4 xl:grid-cols-2">
@@ -551,6 +740,7 @@ export default function AdminDashboard({
                         teamMembers={teamMembers}
                         clients={clients}
                         subservices={serviceSubservices}
+                        currentUser={currentUser}
                       />
                     ))
                   )}
@@ -572,6 +762,7 @@ export default function AdminDashboard({
                           teamMembers={teamMembers}
                           clients={clients}
                           subservices={serviceSubservices}
+                          currentUser={currentUser}
                           initiallyCollapsed
                         />
                       ))}
@@ -581,6 +772,8 @@ export default function AdminDashboard({
               </div>
 
               <aside className="space-y-6">
+                <MyZoneProfileCard user={currentUser} />
+
                 <div className="border border-outline-variant/15 bg-surface-container-low p-5">
                   <h3 className="font-headline text-2xl font-bold text-on-surface">Clientes ligados</h3>
                   <div className="mt-4 space-y-3">
@@ -636,7 +829,7 @@ export default function AdminDashboard({
           </div>
         ) : null}
 
-        {activeTab === "services" ? (
+        {activeTab === "services" && isAdmin ? (
           <div className="space-y-8">
             <div>
               <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
@@ -730,7 +923,7 @@ export default function AdminDashboard({
                   <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
                     Arrasta entre Planeamento e Em producao
                   </span>
-                  <ManualClientCreateModal />
+                  {isAdmin ? <ManualClientCreateModal /> : null}
                 </div>
               </div>
 
@@ -748,7 +941,7 @@ export default function AdminDashboard({
                       activeDropZone={activeDropZone}
                       onDragOver={columnDragOver(zoneId)}
                       onDragLeave={columnDragLeave(zoneId)}
-                      onDrop={clientDrop(column.key as "planeamento" | "em-producao", zoneId)}
+                      onDrop={isAdmin ? clientDrop(column.key as "planeamento" | "em-producao", zoneId) : async () => {}}
                     >
                       <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">
                         <p className="font-headline text-xl font-bold text-on-surface">{column.label}</p>
@@ -766,9 +959,11 @@ export default function AdminDashboard({
                             <Link
                               key={client.id}
                               href={`/area-reservada/clientes/${client.id}`}
-                              draggable
-                              onDragStart={dragStart({ type: "client", id: client.id })}
-                              className="block cursor-grab border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container active:cursor-grabbing"
+                              draggable={isAdmin}
+                              onDragStart={isAdmin ? dragStart({ type: "client", id: client.id }) : undefined}
+                              className={`block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container ${
+                                isAdmin ? "cursor-grab active:cursor-grabbing" : ""
+                              }`}
                             >
                               <p className="font-headline text-lg font-bold text-on-surface">{client.company || client.name}</p>
                               <p className="mt-1 font-body text-sm text-on-surface/55">{client.packName || "Pack por definir"}</p>
@@ -819,25 +1014,184 @@ export default function AdminDashboard({
           </div>
         ) : null}
 
-        {activeTab === "tasks" ? (
+        {activeTab === "professionals" && canManageProfessionals ? (
           <div className="space-y-8">
+            <div className="border border-outline-variant/15 bg-surface-container-low p-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h3 className="font-headline text-2xl font-bold text-on-surface">Capacidade e distribuicao</h3>
+                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
+                  Tempo real
+                </span>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {teamMembers.map((member) => {
+                  const activeTasks = tasks.filter((task) => task.assigneeId === member.id && task.status !== "feito");
+
+                  return (
+                    <div key={`capacity-${member.id}`} className="border border-outline-variant/12 bg-surface p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate font-headline text-lg font-bold text-on-surface">{member.name}</p>
+                          <p className="mt-1 truncate font-body text-sm text-on-surface/55">{member.role}</p>
+                        </div>
+                        <span className="shrink-0 border border-primary-container/18 px-2 py-1 font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                          {teamMemberStatusLabels[member.status]}
+                        </span>
+                      </div>
+                      <div className="mt-4 space-y-2 font-body text-sm text-on-surface/62">
+                        <p>{activeTasks.length} tarefas ativas</p>
+                        <p>{member.dailyCapacity}</p>
+                        <p>{member.email || "Sem email"}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="grid gap-4 xl:grid-cols-[minmax(320px,0.42fr)_minmax(0,1fr)]">
+              <TeamMemberCreateForm />
+
+              <div className="border border-outline-variant/15 bg-surface-container-low p-6">
+                <div className="mb-5 flex items-center justify-between">
+                  <h3 className="font-headline text-2xl font-bold text-on-surface">Painel de edicao</h3>
+                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    Perfis internos
+                  </span>
+                </div>
+                <div className="grid gap-4 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                  <div className="border border-outline-variant/12 bg-surface p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                        Contas internas
+                      </p>
+                      <span className="font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                        {teamMembers.length} perfis
+                      </span>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {teamMembers.map((member) => (
+                        <div
+                          key={`account-panel-${member.id}`}
+                          className="grid gap-3 border border-outline-variant/12 bg-surface-container-low p-4 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.45fr)]"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-3">
+                              {member.avatarUrl ? (
+                                <img
+                                  src={member.avatarUrl}
+                                  alt={member.name}
+                                  className="h-10 w-10 rounded-full border border-outline-variant/20 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-outline-variant/20 bg-surface text-xs font-bold text-primary-container">
+                                  {member.name.slice(0, 2).toUpperCase()}
+                                </div>
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate font-headline text-base font-bold text-on-surface">
+                                  {member.name}
+                                </p>
+                                <p className="truncate font-body text-xs text-on-surface/55">
+                                  @{member.username || "sem-username"} ·{" "}
+                                  {internalUserRoleLabels[member.accessRole ?? "collaborator"]}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start justify-start md:justify-end">
+                            <span className="border border-primary-container/18 px-2 py-1 font-label text-[10px] uppercase tracking-[0.18em] text-primary-container">
+                              {teamMemberStatusLabels[member.status]}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border border-outline-variant/12 bg-surface p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                        Ligacoes por servico
+                      </p>
+                      <span className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                        Edita nos cartoes abaixo
+                      </span>
+                    </div>
+
+                    <div className="mt-4 space-y-3">
+                      {teamMembers.map((member) => (
+                        <div
+                          key={`service-panel-${member.id}`}
+                          className="border border-outline-variant/12 bg-surface-container-low p-4"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="truncate font-headline text-base font-bold text-on-surface">
+                                {member.name}
+                              </p>
+                              <p className="truncate font-body text-xs text-on-surface/55">{member.role}</p>
+                            </div>
+                            <span className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                              {member.assignedServiceIds.length} servicos
+                            </span>
+                          </div>
+
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {member.assignedServiceIds.length === 0 ? (
+                              <span className="font-body text-sm text-on-surface/45">Sem servicos ligados.</span>
+                            ) : (
+                              member.assignedServiceIds.map((serviceId) => (
+                                <span
+                                  key={`service-chip-${member.id}-${serviceId}`}
+                                  className="border border-primary-container/18 bg-primary-container/8 px-2 py-1 font-body text-xs text-primary-container"
+                                >
+                                  {getServiceLabel(serviceId)}
+                                </span>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div>
               <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-headline text-3xl font-bold text-on-surface">Tarefas e equipa</h2>
+                <div>
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">Profissionais</h2>
+                  <p className="mt-2 font-body text-sm text-on-surface/55">
+                    Vista dedicada para gerir a equipa, perfis, capacidade e acesso interno.
+                  </p>
+                </div>
                 <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                  Visao tipo ClickUp
+                  Equipa interna
                 </span>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {teamMembers.map((member) => (
-                  <TeamMemberAdminCard key={member.id} member={member} tasks={tasks} isAdmin={isAdmin} />
+                  <TeamMemberAdminCard
+                    key={`professional-${member.id}`}
+                    member={member}
+                    tasks={tasks}
+                    isAdmin={canManageProfessionals}
+                  />
                 ))}
               </div>
             </div>
+          </div>
+        ) : null}
 
-            <div className={`grid gap-4 ${isAdmin ? "xl:grid-cols-[minmax(300px,0.42fr)_minmax(0,1fr)]" : "xl:grid-cols-1"}`}>
-              {isAdmin ? <TeamMemberCreateForm /> : null}
+        {activeTab === "tasks" ? (
+          <div className="space-y-8">
+            <div className="grid gap-4 xl:grid-cols-1">
               <TaskCreateForm teamMembers={teamMembers} clients={clients} subservices={serviceSubservices} />
             </div>
 
@@ -886,6 +1240,7 @@ export default function AdminDashboard({
                                 teamMembers={teamMembers}
                                 clients={clients}
                                 subservices={serviceSubservices}
+                                currentUser={currentUser}
                               />
                             </div>
                           ))

@@ -11,7 +11,13 @@ import {
 } from "@/lib/service-catalog";
 import type { ClientRecord, ClientStage, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
 
-export default function ClientManagementForm({ client }: { client: ClientRecord }) {
+export default function ClientManagementForm({
+  client,
+  canEdit,
+}: {
+  client: ClientRecord;
+  canEdit: boolean;
+}) {
   const router = useRouter();
   const [packName, setPackName] = useState(client.packName);
   const [packDescription, setPackDescription] = useState(client.packDescription);
@@ -106,30 +112,34 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
                 type="text"
                 value={packName}
                 onChange={(event) => setPackName(event.target.value)}
+                disabled={!canEdit}
                 placeholder="Nome do pack"
-                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
               />
               <input
                 type="text"
                 value={setupFee}
                 onChange={(event) => setSetupFee(event.target.value)}
+                disabled={!canEdit}
                 placeholder="Valor de setup"
-                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
               />
               <input
                 type="text"
                 value={monthlyFee}
                 onChange={(event) => setMonthlyFee(event.target.value)}
+                disabled={!canEdit}
                 placeholder="Recorrencia mensal"
-                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                className="border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
               />
             </div>
             <textarea
               value={packDescription}
               onChange={(event) => setPackDescription(event.target.value)}
+              disabled={!canEdit}
               rows={4}
               placeholder="Breve descricao do pack e do que vai ser entregue..."
-              className="mt-4 w-full resize-none border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+              className="mt-4 w-full resize-none border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
             />
           </div>
 
@@ -145,11 +155,12 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
                     key={service.id}
                     type="button"
                     onClick={() => toggleService(service.id)}
+                    disabled={!canEdit}
                     className={`border px-4 py-3 text-left font-body text-sm transition-colors ${
                       active
                         ? "border-primary-container bg-primary-container text-on-primary"
                         : "border-outline-variant/20 bg-surface text-on-surface/70"
-                    }`}
+                    } disabled:cursor-not-allowed disabled:opacity-60`}
                   >
                     {service.label}
                   </button>
@@ -177,7 +188,8 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
             <select
               value={clientStage}
               onChange={(event) => setClientStage(event.target.value as ClientStage)}
-              className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+              disabled={!canEdit}
+              className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
             >
               {Object.entries(clientStageLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -193,25 +205,33 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
               type="datetime-local"
               value={scheduledAt}
               onChange={(event) => setScheduledAt(event.target.value)}
-              className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+              disabled={!canEdit}
+              className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
             />
 
             <textarea
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
+              disabled={!canEdit}
               rows={4}
               placeholder="Notas internas"
-              className="mt-5 w-full resize-none border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+              className="mt-5 w-full resize-none border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
             />
 
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={status === "loading"}
-              className="mt-5 w-full bg-primary-container px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {status === "loading" ? "A guardar..." : "Guardar cliente"}
-            </button>
+            {canEdit ? (
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={status === "loading"}
+                className="mt-5 w-full bg-primary-container px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {status === "loading" ? "A guardar..." : "Guardar cliente"}
+              </button>
+            ) : (
+              <p className="mt-5 font-body text-sm text-on-surface/45">
+                Apenas o admin pode editar pack, servicos e informacoes do cliente.
+              </p>
+            )}
             {status === "error" ? (
               <p className="mt-3 font-body text-xs text-error">Nao foi possivel guardar as alteracoes.</p>
             ) : null}
@@ -253,7 +273,8 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
                       <select
                         value={serviceStages[serviceId] ?? "planeado"}
                         onChange={(event) => updateServiceStage(serviceId, event.target.value as ServiceDeliveryStage)}
-                        className="mt-3 w-full border border-outline-variant/20 bg-surface-container-low px-3 py-2 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                        disabled={!canEdit}
+                        className="mt-3 w-full border border-outline-variant/20 bg-surface-container-low px-3 py-2 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
                       >
                         {Object.entries(serviceDeliveryStageLabels).map(([value, label]) => (
                           <option key={value} value={value}>

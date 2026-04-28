@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { teamMemberStatusLabels } from "@/lib/service-catalog";
-import type { TeamMemberStatus } from "@/lib/crm-types";
+import { getServiceLabel, internalUserRoleLabels, serviceCatalog, teamMemberStatusLabels } from "@/lib/service-catalog";
+import type { InternalUserRole, ServiceId, TeamMemberStatus } from "@/lib/crm-types";
 
 export default function TeamMemberCreateForm() {
   const router = useRouter();
@@ -11,7 +11,9 @@ export default function TeamMemberCreateForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accessRole, setAccessRole] = useState<Exclude<InternalUserRole, "admin">>("collaborator");
   const [role, setRole] = useState("");
+  const [serviceIds, setServiceIds] = useState<ServiceId[]>([]);
   const [status, setStatus] = useState<TeamMemberStatus>("disponivel");
   const [dailyCapacity, setDailyCapacity] = useState("");
   const [saving, setSaving] = useState(false);
@@ -32,7 +34,9 @@ export default function TeamMemberCreateForm() {
         username,
         email,
         password,
+        accessRole,
         role,
+        serviceIds,
         status,
         dailyCapacity,
       }),
@@ -50,7 +54,9 @@ export default function TeamMemberCreateForm() {
     setUsername("");
     setEmail("");
     setPassword("");
+    setAccessRole("collaborator");
     setRole("");
+    setServiceIds([]);
     setStatus("disponivel");
     setDailyCapacity("");
     router.refresh();
@@ -60,9 +66,7 @@ export default function TeamMemberCreateForm() {
     <form onSubmit={handleSubmit} className="border border-outline-variant/15 bg-surface-container-low p-5">
       <div className="mb-4 flex items-center justify-between">
         <h3 className="font-headline text-xl font-bold text-on-surface">Novo colaborador</h3>
-        <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-          Equipa
-        </span>
+        <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">Equipa</span>
       </div>
 
       <div className="grid gap-3">
@@ -73,6 +77,7 @@ export default function TeamMemberCreateForm() {
           placeholder="Nome"
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
+
         <div className="grid gap-3 md:grid-cols-2">
           <input
             type="text"
@@ -89,13 +94,25 @@ export default function TeamMemberCreateForm() {
             className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
           />
         </div>
-        <input
-          type="text"
-          value={role}
-          onChange={(event) => setRole(event.target.value)}
-          placeholder="Funcao"
-          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-        />
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <select
+            value={accessRole}
+            onChange={(event) => setAccessRole(event.target.value as Exclude<InternalUserRole, "admin">)}
+            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+          >
+            <option value="collaborator">{internalUserRoleLabels.collaborator}</option>
+            <option value="secretaria">{internalUserRoleLabels.secretaria}</option>
+          </select>
+          <input
+            type="text"
+            value={role}
+            onChange={(event) => setRole(event.target.value)}
+            placeholder="Funcao"
+            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+          />
+        </div>
+
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as TeamMemberStatus)}
@@ -107,6 +124,37 @@ export default function TeamMemberCreateForm() {
             </option>
           ))}
         </select>
+
+        <div className="border border-outline-variant/20 bg-surface p-3">
+          <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+            Servicos associados
+          </p>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {serviceCatalog.map((service) => {
+              const active = serviceIds.includes(service.id);
+
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() =>
+                    setServiceIds((prev) =>
+                      prev.includes(service.id) ? prev.filter((item) => item !== service.id) : [...prev, service.id],
+                    )
+                  }
+                  className={`border px-3 py-2 text-left text-sm transition-colors ${
+                    active
+                      ? "border-primary-container bg-primary-container text-on-primary"
+                      : "border-outline-variant/20 bg-surface-container-low text-on-surface/72"
+                  }`}
+                >
+                  {getServiceLabel(service.id)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <input
           type="text"
           value={dailyCapacity}
@@ -114,6 +162,7 @@ export default function TeamMemberCreateForm() {
           placeholder="Capacidade diaria ex. 4h livres hoje"
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
+
         <input
           type="password"
           value={password}

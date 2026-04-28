@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { assertAdminActionRequest } from "@/lib/auth";
 import { createTeamMember } from "@/lib/crm-store";
-import type { TeamMemberStatus } from "@/lib/crm-types";
+import type { InternalUserRole, ServiceId, TeamMemberStatus } from "@/lib/crm-types";
 
 export async function POST(request: Request) {
   const { admin, errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
-  if (admin?.role !== "admin") {
-    return NextResponse.json({ error: "Apenas admins podem criar colaboradores." }, { status: 403 });
+  if (admin?.role !== "admin" && admin?.role !== "secretaria") {
+    return NextResponse.json({ error: "Apenas admin e secretaria podem criar colaboradores." }, { status: 403 });
   }
 
   const payload = (await request.json().catch(() => null)) as
@@ -16,7 +16,9 @@ export async function POST(request: Request) {
         username?: string;
         email?: string;
         password?: string;
+        accessRole?: InternalUserRole;
         role?: string;
+        serviceIds?: ServiceId[];
         status?: TeamMemberStatus;
         dailyCapacity?: string;
       }
@@ -32,7 +34,9 @@ export async function POST(request: Request) {
       username: payload.username?.trim(),
       email: payload.email?.trim(),
       password: payload.password.trim(),
+      accessRole: payload.accessRole === "secretaria" ? "secretaria" : "collaborator",
       role: payload.role.trim(),
+      serviceIds: payload.serviceIds ?? [],
       status: payload.status ?? "disponivel",
       dailyCapacity: payload.dailyCapacity?.trim() || "Sem capacidade definida",
     });

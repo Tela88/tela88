@@ -7,8 +7,11 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ id: string }> },
 ) {
-  const { errorResponse } = await assertAdminActionRequest(request);
+  const { admin, errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
+  if (admin?.role !== "admin") {
+    return NextResponse.json({ error: "Apenas admins podem alterar o estado do cliente." }, { status: 403 });
+  }
 
   const { id } = await context.params;
   const payload = (await request.json().catch(() => null)) as

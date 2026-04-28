@@ -13,6 +13,7 @@ export async function POST(request: Request) {
         description?: string;
       status?: TaskStatus;
       priority?: TaskPriority;
+      priorityMarginDays?: number | null;
       assigneeId?: string;
       dueDate?: string | null;
       clientId?: string | null;
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       description: payload.description?.trim() || "",
       status: "planeamento",
       priority: payload.priority ?? "media",
+      priorityMarginDays: payload.priorityMarginDays ?? null,
       assigneeId: payload.assigneeId,
       dueDate: payload.dueDate ?? null,
       clientId: payload.clientId ?? null,

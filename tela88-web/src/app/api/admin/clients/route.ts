@@ -4,8 +4,11 @@ import { createManualClient } from "@/lib/crm-store";
 import type { ClientStage, ServiceId, ServiceStageMap } from "@/lib/crm-types";
 
 export async function POST(request: Request) {
-  const { errorResponse } = await assertAdminActionRequest(request);
+  const { admin, errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
+  if (admin?.role !== "admin") {
+    return NextResponse.json({ error: "Apenas admins podem criar clientes manualmente." }, { status: 403 });
+  }
 
   const payload = (await request.json().catch(() => null)) as
     | {

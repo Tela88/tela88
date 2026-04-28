@@ -1,5 +1,6 @@
 import type {
   ClientStage,
+  InternalUserRole,
   ServiceDeliveryStage,
   ServiceId,
   ServiceSubservice,
@@ -9,21 +10,41 @@ import type {
 } from "@/lib/crm-types";
 
 export const serviceCatalog: { id: ServiceId; label: string; summary: string }[] = [
-  { id: "websites-crm", label: "Websites e CRM", summary: "Plataformas, landing pages, CRM e automações base." },
-  { id: "anuncios-trafego-organico", label: "Anúncios e Tráfego Orgânico", summary: "Aquisição paga, SEO editorial e performance contínua." },
-  { id: "funis-conversao", label: "Funis de Conversão", summary: "Captação, nurturing e sequências para fechar mais leads." },
-  { id: "consultoria-marketing", label: "Consultoria de Marketing", summary: "Planeamento, posicionamento e direção estratégica." },
-  { id: "design-grafico", label: "Design Gráfico", summary: "Peças visuais, criativos e identidade aplicada ao digital." },
-  { id: "gestao-redes-sociais", label: "Gestão de Redes Sociais", summary: "Calendário, publicação e acompanhamento editorial." },
+  { id: "websites-crm", label: "Websites e CRM", summary: "Plataformas, landing pages, CRM e automacoes base." },
+  {
+    id: "anuncios-trafego-organico",
+    label: "Anuncios e Trafego Organico",
+    summary: "Aquisicao paga, SEO editorial e performance continua.",
+  },
+  {
+    id: "funis-conversao",
+    label: "Funis de Conversao",
+    summary: "Captacao, nurturing e sequencias para fechar mais leads.",
+  },
+  {
+    id: "consultoria-marketing",
+    label: "Consultoria de Marketing",
+    summary: "Planeamento, posicionamento e direcao estrategica.",
+  },
+  {
+    id: "design-grafico",
+    label: "Design Grafico",
+    summary: "Pecas visuais, criativos e identidade aplicada ao digital.",
+  },
+  {
+    id: "gestao-redes-sociais",
+    label: "Gestao de Redes Sociais",
+    summary: "Calendario, publicacao e acompanhamento editorial.",
+  },
 ];
 
 export const focusAreaLabels: Record<string, string> = {
   visibilidade: "Visibilidade",
-  trafego: "Tráfego",
-  conversao: "Conversão",
-  retencao: "Retenção",
+  trafego: "Trafego",
+  conversao: "Conversao",
+  retencao: "Retencao",
   "trabalho-pontual": "Trabalho pontual",
-  "trabalho-continuo": "Trabalho contínuo",
+  "trabalho-continuo": "Trabalho continuo",
 };
 
 export const requestStatusLabels = {
@@ -36,32 +57,38 @@ export const requestStatusLabels = {
 
 export const clientStageLabels: Record<ClientStage, string> = {
   planeamento: "Planeamento",
-  "em-producao": "Em produção",
+  "em-producao": "Em producao",
 };
 
 export const serviceDeliveryStageLabels: Record<ServiceDeliveryStage, string> = {
   planeado: "Planeado",
-  "em-producao": "Em produção",
-  concluido: "Concluído",
+  "em-producao": "Em producao",
+  concluido: "Concluido",
 };
 
 export const teamMemberStatusLabels: Record<TeamMemberStatus, string> = {
-  disponivel: "Disponível",
+  disponivel: "Disponivel",
   ocupado: "Ocupado",
   offline: "Offline",
+};
+
+export const internalUserRoleLabels: Record<InternalUserRole, string> = {
+  admin: "Admin",
+  collaborator: "Colaborador",
+  secretaria: "Secretaria",
 };
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
   hoje: "Hoje",
   planeamento: "Planeamento",
-  "em-producao": "Produção",
-  "em-revisao": "Revisão",
+  "em-producao": "Producao",
+  "em-revisao": "Revisao",
   feito: "Feito",
 };
 
 export const taskPriorityLabels: Record<TaskPriority, string> = {
   alta: "Alta",
-  media: "Média",
+  media: "Media",
   baixa: "Baixa",
 };
 

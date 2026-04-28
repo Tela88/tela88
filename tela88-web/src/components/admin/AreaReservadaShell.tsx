@@ -4,8 +4,15 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import type { AuthenticatedUser } from "@/lib/crm-types";
 
-export default function AreaReservadaShell({ children }: { children: React.ReactNode }) {
+export default function AreaReservadaShell({
+  children,
+  initialUser,
+}: {
+  children: React.ReactNode;
+  initialUser: AuthenticatedUser | null;
+}) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/area-reservada/login";
 
@@ -13,12 +20,29 @@ export default function AreaReservadaShell({ children }: { children: React.React
     return <>{children}</>;
   }
 
+  const mobileNavItems = [
+    ["tasks", "Tarefas"],
+    ["my-zone", "Minha Zona"],
+    ["professionals", "Profissionais"],
+    ["services", "Servicos"],
+    ["clients", "Clientes"],
+    ["meetings", "Reunioes"],
+    ["pending", "Pedidos"],
+    ["overview", "Painel"],
+  ].filter(([tab]) =>
+    initialUser?.role === "admin"
+      ? true
+      : initialUser?.role === "secretaria"
+        ? tab !== "services" && tab !== "overview"
+        : tab !== "services" && tab !== "overview" && tab !== "professionals",
+  );
+
   return (
     <div className="min-h-screen bg-surface xl:grid xl:grid-cols-[300px_minmax(0,1fr)]">
       <div className="hidden xl:block">
         <Suspense
           fallback={
-            <aside className="flex min-h-screen flex-col border-r border-outline-variant/15 bg-surface-container-low px-4 py-6">
+            <aside className="sticky top-0 flex h-screen flex-col overflow-y-auto border-r border-outline-variant/15 bg-surface-container-low px-4 py-6">
               <div className="border-b border-outline-variant/12 pb-5">
                 <p className="font-label text-[10px] uppercase tracking-[0.28em] text-primary-container">
                   Tela 88
@@ -31,7 +55,7 @@ export default function AreaReservadaShell({ children }: { children: React.React
             </aside>
           }
         >
-          <AdminSidebar />
+          <AdminSidebar initialUser={initialUser} />
         </Suspense>
       </div>
       <div className="xl:min-h-screen">
@@ -40,15 +64,7 @@ export default function AreaReservadaShell({ children }: { children: React.React
           <p className="mt-2 font-headline text-lg font-bold text-on-surface">Admin Dashboard</p>
           <div className="mt-4 overflow-x-auto">
             <div className="flex gap-2 pb-2">
-              {[
-                ["tasks", "Tarefas"],
-                ["my-zone", "Minha Zona"],
-                ["services", "Servicos"],
-                ["clients", "Clientes"],
-                ["meetings", "Reunioes"],
-                ["pending", "Pedidos"],
-                ["overview", "Painel"],
-              ].map(([tab, label]) => (
+              {mobileNavItems.map(([tab, label]) => (
                 <Link
                   key={tab}
                   href={`/area-reservada?tab=${tab}`}

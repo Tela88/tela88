@@ -2,8 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { teamMemberStatusLabels } from "@/lib/service-catalog";
-import type { TeamMember, TeamMemberStatus, TeamTask } from "@/lib/crm-types";
+import {
+  getServiceLabel,
+  internalUserRoleLabels,
+  serviceCatalog,
+  teamMemberStatusLabels,
+} from "@/lib/service-catalog";
+import type { InternalUserRole, ServiceId, TeamMember, TeamMemberStatus, TeamTask } from "@/lib/crm-types";
 
 type TeamMemberAdminCardProps = {
   member: TeamMember;
@@ -11,18 +16,18 @@ type TeamMemberAdminCardProps = {
   isAdmin: boolean;
 };
 
-export default function TeamMemberAdminCard({
-  member,
-  tasks,
-  isAdmin,
-}: TeamMemberAdminCardProps) {
+export default function TeamMemberAdminCard({ member, tasks, isAdmin }: TeamMemberAdminCardProps) {
   const router = useRouter();
   const memberTasks = useMemo(() => tasks.filter((task) => task.assigneeId === member.id), [member.id, tasks]);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(member.name);
   const [username, setUsername] = useState(member.username ?? "");
   const [email, setEmail] = useState(member.email ?? "");
+  const [accessRole, setAccessRole] = useState<Exclude<InternalUserRole, "admin">>(
+    member.accessRole === "secretaria" ? "secretaria" : "collaborator",
+  );
   const [role, setRole] = useState(member.role);
+  const [serviceIds, setServiceIds] = useState<ServiceId[]>(member.assignedServiceIds ?? []);
   const [status, setStatus] = useState<TeamMemberStatus>(member.status);
   const [dailyCapacity, setDailyCapacity] = useState(member.dailyCapacity);
   const [password, setPassword] = useState("");
@@ -44,7 +49,9 @@ export default function TeamMemberAdminCard({
         name,
         username,
         email,
+        accessRole,
         role,
+        serviceIds,
         status,
         dailyCapacity,
         password,
@@ -89,20 +96,71 @@ export default function TeamMemberAdminCard({
     return (
       <div className="border border-outline-variant/15 bg-surface-container-low p-6">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="font-headline text-xl font-bold text-on-surface">{member.name}</p>
-            <p className="mt-1 font-body text-sm text-on-surface/55">{member.role}</p>
+          <div className="flex min-w-0 items-start gap-4">
+            {member.avatarUrl ? (
+              <img
+                src={member.avatarUrl}
+                alt={member.name}
+                className="h-14 w-14 rounded-full border border-outline-variant/20 object-cover"
+              />
+            ) : (
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-outline-variant/20 bg-surface text-sm font-bold text-primary-container">
+                {member.name.slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div className="min-w-0">
+              <p className="truncate font-headline text-xl font-bold text-on-surface">{member.name}</p>
+              <p className="mt-1 truncate font-body text-sm text-on-surface/55">{member.role}</p>
+              <p className="mt-2 font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+                {internalUserRoleLabels[member.accessRole ?? "collaborator"]}
+              </p>
+            </div>
           </div>
           <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
             {teamMemberStatusLabels[member.status]}
           </span>
         </div>
 
-        <div className="mt-4 space-y-2 font-body text-sm text-on-surface/62">
-          <p>Utilizador: {member.username || "Sem username"}</p>
-          <p>Email: {member.email || "Sem email"}</p>
-          <p>Capacidade: {member.dailyCapacity}</p>
-          <p>{memberTasks.length} tarefas atribuidas</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-2">
+          <div className="border border-outline-variant/12 bg-surface px-4 py-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Utilizador</p>
+            <p className="mt-2 truncate font-body text-sm text-on-surface/70">{member.username || "Sem username"}</p>
+          </div>
+          <div className="border border-outline-variant/12 bg-surface px-4 py-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Email</p>
+            <p className="mt-2 truncate font-body text-sm text-on-surface/70">{member.email || "Sem email"}</p>
+          </div>
+          <div className="border border-outline-variant/12 bg-surface px-4 py-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Capacidade</p>
+            <p className="mt-2 truncate font-body text-sm text-on-surface/70">{member.dailyCapacity}</p>
+          </div>
+          <div className="border border-outline-variant/12 bg-surface px-4 py-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Carga atual</p>
+            <p className="mt-2 font-body text-sm text-on-surface/70">{memberTasks.length} tarefas atribuidas</p>
+          </div>
+        </div>
+
+        <div className="mt-5 border border-outline-variant/12 bg-surface px-4 py-4">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Servicos ligados</p>
+            <span className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+              {member.assignedServiceIds.length} ativos
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {member.assignedServiceIds.length === 0 ? (
+              <span className="font-body text-sm text-on-surface/45">Sem servicos associados.</span>
+            ) : (
+              member.assignedServiceIds.map((serviceId) => (
+                <span
+                  key={`${member.id}-${serviceId}`}
+                  className="border border-primary-container/18 bg-primary-container/8 px-2 py-1 font-body text-xs text-primary-container"
+                >
+                  {getServiceLabel(serviceId)}
+                </span>
+              ))
+            )}
+          </div>
         </div>
 
         {isAdmin ? (
@@ -146,7 +204,9 @@ export default function TeamMemberAdminCard({
             setName(member.name);
             setUsername(member.username ?? "");
             setEmail(member.email ?? "");
+            setAccessRole(member.accessRole === "secretaria" ? "secretaria" : "collaborator");
             setRole(member.role);
+            setServiceIds(member.assignedServiceIds ?? []);
             setStatus(member.status);
             setDailyCapacity(member.dailyCapacity);
           }}
@@ -164,6 +224,7 @@ export default function TeamMemberAdminCard({
           placeholder="Nome"
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
+
         <div className="grid gap-3 md:grid-cols-2">
           <input
             type="text"
@@ -180,13 +241,60 @@ export default function TeamMemberAdminCard({
             className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
           />
         </div>
-        <input
-          type="text"
-          value={role}
-          onChange={(event) => setRole(event.target.value)}
-          placeholder="Funcao"
-          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-        />
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <select
+            value={accessRole}
+            onChange={(event) => setAccessRole(event.target.value as Exclude<InternalUserRole, "admin">)}
+            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+          >
+            <option value="collaborator">{internalUserRoleLabels.collaborator}</option>
+            <option value="secretaria">{internalUserRoleLabels.secretaria}</option>
+          </select>
+          <input
+            type="text"
+            value={role}
+            onChange={(event) => setRole(event.target.value)}
+            placeholder="Funcao"
+            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+          />
+        </div>
+
+        <div className="border border-outline-variant/20 bg-surface p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+              Servicos associados
+            </p>
+            <span className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+              {serviceIds.length} selecionados
+            </span>
+          </div>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            {serviceCatalog.map((service) => {
+              const active = serviceIds.includes(service.id);
+
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  onClick={() =>
+                    setServiceIds((prev) =>
+                      prev.includes(service.id) ? prev.filter((item) => item !== service.id) : [...prev, service.id],
+                    )
+                  }
+                  className={`border px-3 py-2 text-left text-sm transition-colors ${
+                    active
+                      ? "border-primary-container bg-primary-container text-on-primary"
+                      : "border-outline-variant/20 bg-surface-container-low text-on-surface/72"
+                  }`}
+                >
+                  {getServiceLabel(service.id)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <select
           value={status}
           onChange={(event) => setStatus(event.target.value as TeamMemberStatus)}
@@ -198,6 +306,7 @@ export default function TeamMemberAdminCard({
             </option>
           ))}
         </select>
+
         <input
           type="text"
           value={dailyCapacity}
@@ -205,6 +314,7 @@ export default function TeamMemberAdminCard({
           placeholder="Capacidade diaria"
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
+
         <input
           type="password"
           value={password}

@@ -4,9 +4,26 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
 import { taskStatusLabels } from "@/lib/service-catalog";
-import type { ClientRecord, ServiceSubservice, TeamMember, TeamTask } from "@/lib/crm-types";
+import type { AuthenticatedUser, ClientRecord, ServiceSubservice, TeamMember, TeamTask } from "@/lib/crm-types";
 
 type DragPayload = { type: "task"; id: string };
+
+const taskPriorityOrder: Record<TeamTask["priority"], number> = {
+  alta: 0,
+  media: 1,
+  baixa: 2,
+};
+
+function sortTasksByPriority(items: TeamTask[]) {
+  return [...items].sort((left, right) => {
+    const priorityDelta = taskPriorityOrder[left.priority] - taskPriorityOrder[right.priority];
+    if (priorityDelta !== 0) return priorityDelta;
+
+    const leftDate = left.dueDate ? new Date(left.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    const rightDate = right.dueDate ? new Date(right.dueDate).getTime() : Number.MAX_SAFE_INTEGER;
+    return leftDate - rightDate;
+  });
+}
 
 export default function ClientTaskBoard({
   clientId,
@@ -14,22 +31,24 @@ export default function ClientTaskBoard({
   teamMembers,
   clients,
   subservices,
+  currentUser,
 }: {
   clientId: string;
   tasks: TeamTask[];
   teamMembers: TeamMember[];
   clients: ClientRecord[];
   subservices: ServiceSubservice[];
+  currentUser: AuthenticatedUser;
 }) {
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
 
   const tasksByStatus = {
-    hoje: tasks.filter((task) => task.status === "hoje"),
-    planeamento: tasks.filter((task) => task.status === "planeamento"),
-    "em-producao": tasks.filter((task) => task.status === "em-producao"),
-    "em-revisao": tasks.filter((task) => task.status === "em-revisao"),
-    feito: tasks.filter((task) => task.status === "feito"),
+    hoje: sortTasksByPriority(tasks.filter((task) => task.status === "hoje")),
+    planeamento: sortTasksByPriority(tasks.filter((task) => task.status === "planeamento")),
+    "em-producao": sortTasksByPriority(tasks.filter((task) => task.status === "em-producao")),
+    "em-revisao": sortTasksByPriority(tasks.filter((task) => task.status === "em-revisao")),
+    feito: sortTasksByPriority(tasks.filter((task) => task.status === "feito")),
   };
 
   function dragStart(taskId: string) {
@@ -79,14 +98,20 @@ export default function ClientTaskBoard({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          status: targetStatus,
-          priority: task.priority,
-          assigneeId: task.assigneeId,
-          dueDate: task.dueDate,
-          serviceId: task.serviceId,
-          subServiceId: task.subServiceId,
-        }),
+        body: JSON.stringify(
+          currentUser.role === "admin"
+            ? {
+                status: targetStatus,
+                priority: task.priority,
+                assigneeId: task.assigneeId,
+                dueDate: task.dueDate,
+                serviceId: task.serviceId,
+                subServiceId: task.subServiceId,
+              }
+            : {
+                status: targetStatus,
+              },
+        ),
       });
 
       setActiveDropZone(null);
@@ -139,6 +164,7 @@ export default function ClientTaskBoard({
                       teamMembers={teamMembers}
                       clients={clients}
                       subservices={subservices}
+                      currentUser={currentUser}
                       compact={statusKey === "feito"}
                     />
                   </div>

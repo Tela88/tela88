@@ -52,7 +52,7 @@ export default async function ClientDetailPage({
           </p>
         </div>
 
-        <ClientManagementForm client={client} />
+        <ClientManagementForm client={client} canEdit={admin.role === "admin"} />
 
         <section className="mt-10 space-y-8">
           <div className="border-t border-outline-variant/15 pt-8">
@@ -117,6 +117,7 @@ export default async function ClientDetailPage({
               teamMembers={teamMembers}
               clients={clients}
               subservices={serviceSubservices}
+              currentUser={admin}
             />
           </div>
         </section>
