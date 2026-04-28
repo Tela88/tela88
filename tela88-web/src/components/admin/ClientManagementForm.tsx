@@ -33,7 +33,6 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
   const groupedServices = useMemo(() => {
     const groups: Record<ServiceDeliveryStage, ServiceId[]> = {
       planeado: [],
-      "em-processo": [],
       "em-producao": [],
       concluido: [],
     };
@@ -231,7 +230,7 @@ export default function ClientManagementForm({ client }: { client: ClientRecord 
           </Link>
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-4">
+        <div className="grid gap-4 xl:grid-cols-3">
           {(Object.keys(groupedServices) as ServiceDeliveryStage[]).map((stage) => (
             <div key={stage} className="border border-outline-variant/15 bg-surface-container-low p-4">
               <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">

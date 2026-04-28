@@ -1,6 +1,6 @@
 export type RequestStatus = "pending" | "agendado" | "atendido" | "cliente" | "fechado";
 
-export type ClientStage = "em-processo" | "em-producao";
+export type ClientStage = "planeamento" | "em-producao";
 
 export type ServiceId =
   | "websites-crm"
@@ -10,10 +10,10 @@ export type ServiceId =
   | "design-grafico"
   | "gestao-redes-sociais";
 
-export type ServiceDeliveryStage = "planeado" | "em-processo" | "em-producao" | "concluido";
+export type ServiceDeliveryStage = "planeado" | "em-producao" | "concluido";
 export type ServiceStageMap = Partial<Record<ServiceId, ServiceDeliveryStage>>;
 export type TeamMemberStatus = "disponivel" | "ocupado" | "offline";
-export type TaskStatus = "hoje" | "em-curso" | "em-revisao" | "feito";
+export type TaskStatus = "hoje" | "planeamento" | "em-producao" | "em-revisao" | "feito";
 export type TaskPriority = "alta" | "media" | "baixa";
 export type InternalUserRole = "admin" | "collaborator";
 

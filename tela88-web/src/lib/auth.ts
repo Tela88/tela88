@@ -1,4 +1,4 @@
-import { createHmac, scryptSync, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { selectSingle } from "@/lib/supabase-rest";
@@ -46,6 +46,12 @@ function verifyPassword(password: string, storedHash: string) {
   const expected = Buffer.from(expectedHash, "hex");
 
   return provided.length === expected.length && timingSafeEqual(provided, expected);
+}
+
+export function createPasswordHash(password: string) {
+  const salt = randomBytes(16).toString("hex");
+  const hash = scryptSync(password, salt, 64).toString("hex");
+  return `scrypt$${salt}$${hash}`;
 }
 
 function mapUser(row: InternalUserRow): AuthenticatedUser {

@@ -38,7 +38,7 @@ export async function POST(
       monthlyFee: payload.monthlyFee?.trim() ?? "",
       services: payload.services ?? [],
       serviceStages: payload.serviceStages ?? {},
-      clientStage: payload.clientStage ?? "em-processo",
+      clientStage: payload.clientStage ?? "planeamento",
       notes: payload.notes?.trim() ?? "",
       scheduledAt: payload.scheduledAt ?? null,
     });

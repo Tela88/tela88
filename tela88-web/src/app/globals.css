@@ -54,9 +54,9 @@ html {
   --color-on-error: #690005;
   --color-on-error-container: #ffdad6;
 
-  --font-headline: "Space Grotesk", sans-serif;
-  --font-body: "Inter", sans-serif;
-  --font-label: "Inter", sans-serif;
+  --font-body: "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-headline: var(--font-body);
+  --font-label: var(--font-body);
 }
 
 body {

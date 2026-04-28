@@ -1,4 +1,5 @@
 ﻿import { randomUUID } from "node:crypto";
+import { createPasswordHash } from "@/lib/auth";
 import { deleteRows, insertRow, selectRows, selectSingle, updateRows } from "@/lib/supabase-rest";
 import type {
   ClientRecord,
@@ -47,7 +48,7 @@ type RequestRow = {
 
 type ClientRow = {
   id: string;
-  request_id: string;
+  request_id: string | null;
   name: string;
   email: string;
   company: string;
@@ -116,7 +117,7 @@ function mapTeamMember(row: UserRow): TeamMember {
 function mapClient(row: ClientRow, services: ClientServiceRow[]): ClientRecord {
   return {
     id: row.id,
-    requestId: row.request_id,
+    requestId: row.request_id ?? "",
     name: row.name,
     email: row.email,
     company: row.company,
@@ -152,6 +153,17 @@ function mapTask(row: TaskRow): TeamTask {
     clientId: row.client_id,
     serviceId: row.service_id,
   };
+}
+
+function createUsernameSlug(value: string) {
+  return (
+    value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "") || randomUUID()
+  );
 }
 
 async function getClientServices() {
@@ -301,7 +313,7 @@ export async function updateRequestStage(input: {
       focus_area: request.focus_area,
       scheduled_at: request.scheduled_at,
       internal_notes: request.internal_notes,
-      client_stage: "em-processo",
+      client_stage: "planeamento",
     });
 
     clientId = client?.id ?? null;
@@ -327,7 +339,7 @@ export async function convertRequestToClient(input: { requestId: string }) {
 
 export async function updateClient(input: {
   id: string;
-  clientStage: "em-processo" | "em-producao";
+  clientStage: "planeamento" | "em-producao";
   packName: string;
   packDescription: string;
   setupFee: string;
@@ -407,20 +419,23 @@ export async function updateClientStage(input: {
 
 export async function createTeamMember(input: {
   name: string;
+  username?: string;
+  email?: string;
+  password: string;
   role: string;
   status: TeamMemberStatus;
   dailyCapacity: string;
 }) {
-  const username = input.name.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/^\.+|\.+$/g, "") || randomUUID();
+  const username = createUsernameSlug(input.username?.trim() || input.name);
   const row = await insertRow<UserRow>("internal_users", {
     username,
-    email: `${username}@tela88.local`,
+    email: input.email?.trim() || `${username}@tela88.local`,
     name: input.name,
     role: "collaborator",
     function_role: input.role,
     status: input.status,
     daily_capacity: input.dailyCapacity,
-    password_hash: "pending-password-reset",
+    password_hash: createPasswordHash(input.password),
   });
 
   if (!row) {
@@ -428,6 +443,65 @@ export async function createTeamMember(input: {
   }
 
   return mapTeamMember(row);
+}
+
+export async function updateTeamMember(input: {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
+  status: TeamMemberStatus;
+  dailyCapacity: string;
+  password?: string;
+}) {
+  const existing = await selectSingle<(UserRow & { password_hash: string })>("internal_users", {
+    filters: { id: input.id },
+  });
+
+  if (!existing || existing.role !== "collaborator") {
+    throw new Error("Colaborador nao encontrado.");
+  }
+
+  const payload: Record<string, string> = {
+    name: input.name.trim(),
+    username: createUsernameSlug(input.username),
+    email: input.email.trim(),
+    function_role: input.role.trim(),
+    status: input.status,
+    daily_capacity: input.dailyCapacity.trim(),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.password?.trim()) {
+    payload.password_hash = createPasswordHash(input.password.trim());
+  }
+
+  const rows = await updateRows<UserRow>("internal_users", { id: input.id }, payload);
+
+  if (!rows[0]) {
+    throw new Error("Nao foi possivel atualizar o colaborador.");
+  }
+
+  return mapTeamMember(rows[0]);
+}
+
+export async function deleteTeamMember(id: string) {
+  const existing = await selectSingle<UserRow>("internal_users", {
+    filters: { id },
+  });
+
+  if (!existing || existing.role !== "collaborator") {
+    throw new Error("Colaborador nao encontrado.");
+  }
+
+  const deleted = await deleteRows<UserRow>("internal_users", { id });
+
+  if (!deleted.length) {
+    throw new Error("Nao foi possivel eliminar o colaborador.");
+  }
+
+  return { id };
 }
 
 export async function createManualClient(input: {
@@ -448,7 +522,7 @@ export async function createManualClient(input: {
   serviceStages: ServiceStageMap;
 }) {
   const row = await insertRow<ClientRow>("clients", {
-    request_id: `manual-${randomUUID()}`,
+    request_id: null,
     name: input.name,
     email: input.email,
     company: input.company,
@@ -487,6 +561,7 @@ export async function updateTask(input: {
   priority: TaskPriority;
   assigneeId: string;
   dueDate: string | null;
+  serviceId: ServiceId | null;
 }) {
   const rows = await updateRows<TaskRow>(
     "team_tasks",
@@ -496,6 +571,7 @@ export async function updateTask(input: {
       priority: input.priority,
       assignee_id: input.assigneeId || null,
       due_date: input.dueDate,
+      service_id: input.serviceId,
       updated_at: new Date().toISOString(),
     },
   );
@@ -533,4 +609,14 @@ export async function createTask(input: {
   }
 
   return mapTask(row);
+}
+
+export async function deleteTask(id: string) {
+  const deleted = await deleteRows<TaskRow>("team_tasks", { id });
+
+  if (!deleted.length) {
+    throw new Error("Tarefa nao encontrada.");
+  }
+
+  return { id };
 }

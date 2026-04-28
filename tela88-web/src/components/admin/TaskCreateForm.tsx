@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { getServiceLabel, taskPriorityLabels, taskStatusLabels } from "@/lib/service-catalog";
-import type { ClientRecord, ServiceId, TaskPriority, TaskStatus, TeamMember } from "@/lib/crm-types";
+import { getServiceLabel, taskPriorityLabels } from "@/lib/service-catalog";
+import type { ClientRecord, ServiceId, TaskPriority, TeamMember } from "@/lib/crm-types";
 
 export default function TaskCreateForm({
   teamMembers,
@@ -17,7 +17,6 @@ export default function TaskCreateForm({
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState<TaskStatus>("hoje");
   const [priority, setPriority] = useState<TaskPriority>("media");
   const [assigneeId, setAssigneeId] = useState(teamMembers[0]?.id ?? "");
   const [dueDate, setDueDate] = useState("");
@@ -44,7 +43,6 @@ export default function TaskCreateForm({
       body: JSON.stringify({
         title,
         description,
-        status,
         priority,
         assigneeId,
         dueDate: dueDate || null,
@@ -63,7 +61,6 @@ export default function TaskCreateForm({
 
     setTitle("");
     setDescription("");
-    setStatus("hoje");
     setPriority("media");
     setDueDate("");
     setServiceId("");
@@ -98,17 +95,12 @@ export default function TaskCreateForm({
           className="w-full resize-none border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
         <div className="grid gap-3 md:grid-cols-2">
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value as TaskStatus)}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-          >
-            {Object.entries(taskStatusLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          <div className="border border-outline-variant/20 bg-surface px-3 py-3">
+            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
+              Estado inicial
+            </p>
+            <p className="mt-2 font-body text-sm text-on-surface">Planeamento</p>
+          </div>
           <select
             value={priority}
             onChange={(event) => setPriority(event.target.value as TaskPriority)}

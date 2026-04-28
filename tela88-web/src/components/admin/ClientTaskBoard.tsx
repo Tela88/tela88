@@ -24,7 +24,8 @@ export default function ClientTaskBoard({
 
   const tasksByStatus = {
     hoje: tasks.filter((task) => task.status === "hoje"),
-    "em-curso": tasks.filter((task) => task.status === "em-curso"),
+    planeamento: tasks.filter((task) => task.status === "planeamento"),
+    "em-producao": tasks.filter((task) => task.status === "em-producao"),
     "em-revisao": tasks.filter((task) => task.status === "em-revisao"),
     feito: tasks.filter((task) => task.status === "feito"),
   };
@@ -95,7 +96,7 @@ export default function ClientTaskBoard({
   }
 
   return (
-    <div className="grid gap-4 xl:grid-cols-4">
+    <div className="grid gap-4 xl:grid-cols-5">
       {(Object.keys(tasksByStatus) as Array<keyof typeof tasksByStatus>).map((statusKey) => {
         const zoneId = `client-task-${statusKey}`;
 
@@ -116,7 +117,7 @@ export default function ClientTaskBoard({
               </span>
             </div>
 
-            <div className="space-y-3">
+            <div className={statusKey === "feito" ? "space-y-2" : "space-y-3"}>
               {tasksByStatus[statusKey].length === 0 ? (
                 <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                   <p className="font-body text-xs text-on-surface/45">Larga aqui uma tarefa.</p>
@@ -129,7 +130,12 @@ export default function ClientTaskBoard({
                     onDragStart={dragStart(task.id)}
                     className="cursor-grab active:cursor-grabbing"
                   >
-                    <TaskCardEditor task={task} teamMembers={teamMembers} clients={clients} />
+                    <TaskCardEditor
+                      task={task}
+                      teamMembers={teamMembers}
+                      clients={clients}
+                      compact={statusKey === "feito"}
+                    />
                   </div>
                 ))
               )}

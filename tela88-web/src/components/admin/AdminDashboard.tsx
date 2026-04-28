@@ -8,6 +8,7 @@ import MeetingStageActions from "@/components/admin/MeetingStageActions";
 import PendingRequestActions from "@/components/admin/PendingRequestActions";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
 import TaskCreateForm from "@/components/admin/TaskCreateForm";
+import TeamMemberAdminCard from "@/components/admin/TeamMemberAdminCard";
 import TeamMemberCreateForm from "@/components/admin/TeamMemberCreateForm";
 import {
   clientStageLabels,
@@ -103,16 +104,18 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
+  const isAdmin = currentUser.role === "admin";
 
-  const clientsInProcess = clients.filter((item) => item.clientStage === "em-processo");
+  const clientsInProcess = clients.filter((item) => item.clientStage === "planeamento");
   const clientsInProduction = clients.filter((item) => item.clientStage === "em-producao");
   const totalServicesActive = clients.reduce((accumulator, client) => accumulator + client.services.length, 0);
   const openTasks = tasks.filter((task) => task.status !== "feito");
-  const tasksDueToday = tasks.filter((task) => task.status === "hoje");
+  const tasksInPlanning = tasks.filter((task) => task.status === "planeamento");
   const tasksInReview = tasks.filter((task) => task.status === "em-revisao");
   const highPriorityOpenTasks = openTasks.filter((task) => task.priority === "alta");
   const myTasks = tasks.filter((task) => task.assigneeId === currentUser.id);
   const myOpenTasks = myTasks.filter((task) => task.status !== "feito");
+  const myCompletedTasks = myTasks.filter((task) => task.status === "feito");
   const myClientIds = new Set(myTasks.map((task) => task.clientId).filter(Boolean));
   const myClients = clients.filter((client) => myClientIds.has(client.id));
   const myServiceKeys = new Set(
@@ -134,13 +137,13 @@ export default function AdminDashboard({
   const myServices = serviceWorkItems.filter((service) => myServiceKeys.has(`${service.client.id}:${service.id}`));
   const servicesByStage: Record<ServiceDeliveryStage, ServiceWorkItem[]> = {
     planeado: serviceWorkItems.filter((service) => service.stage === "planeado"),
-    "em-processo": serviceWorkItems.filter((service) => service.stage === "em-processo"),
     "em-producao": serviceWorkItems.filter((service) => service.stage === "em-producao"),
     concluido: serviceWorkItems.filter((service) => service.stage === "concluido"),
   };
   const tasksByStatus = {
     hoje: tasks.filter((task) => task.status === "hoje"),
-    "em-curso": tasks.filter((task) => task.status === "em-curso"),
+    planeamento: tasks.filter((task) => task.status === "planeamento"),
+    "em-producao": tasks.filter((task) => task.status === "em-producao"),
     "em-revisao": tasks.filter((task) => task.status === "em-revisao"),
     feito: tasks.filter((task) => task.status === "feito"),
   };
@@ -201,7 +204,7 @@ export default function AdminDashboard({
     };
   }
 
-  function clientDrop(targetStatus: "em-processo" | "em-producao", zoneId: string) {
+  function clientDrop(targetStatus: "planeamento" | "em-producao", zoneId: string) {
     return async (event: React.DragEvent<HTMLDivElement>) => {
       event.preventDefault();
       const payload = parsePayload(event);
@@ -276,7 +279,7 @@ export default function AdminDashboard({
                 </div>
                 <div className="border border-outline-variant/15 bg-surface-container-low p-6">
                   <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                    Clientes em processo
+                    Clientes em planeamento
                   </p>
                   <p className="mt-4 font-headline text-2xl font-bold text-on-surface">
                     {String(clientsInProcess.length).padStart(2, "0")}
@@ -284,10 +287,10 @@ export default function AdminDashboard({
                 </div>
                 <div className="border border-outline-variant/15 bg-surface-container-low p-6">
                   <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                    Tarefas para hoje
+                    Em planeamento
                   </p>
                   <p className="mt-4 font-headline text-2xl font-bold text-on-surface">
-                    {String(tasksDueToday.length).padStart(2, "0")}
+                    {String(tasksInPlanning.length).padStart(2, "0")}
                   </p>
                 </div>
                 <div className="border border-outline-variant/15 bg-surface-container-low p-6">
@@ -535,11 +538,38 @@ export default function AdminDashboard({
                       <p className="font-body text-sm text-on-surface/45">Ainda nao tens tarefas atribuidas.</p>
                     </div>
                   ) : (
-                    myTasks.map((task) => (
-                      <TaskCardEditor key={task.id} task={task} teamMembers={teamMembers} clients={clients} />
+                    myOpenTasks.map((task) => (
+                      <TaskCardEditor
+                        key={task.id}
+                        task={task}
+                        teamMembers={teamMembers}
+                        clients={clients}
+                      />
                     ))
                   )}
                 </div>
+
+                {myCompletedTasks.length > 0 ? (
+                  <div className="mt-8 border-t border-outline-variant/12 pt-6">
+                    <div className="mb-4 flex items-center justify-between">
+                      <h3 className="font-headline text-2xl font-bold text-on-surface">Finalizadas</h3>
+                      <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                        {String(myCompletedTasks.length).padStart(2, "0")}
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {myCompletedTasks.map((task) => (
+                        <TaskCardEditor
+                          key={task.id}
+                          task={task}
+                          teamMembers={teamMembers}
+                          clients={clients}
+                          initiallyCollapsed
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               <aside className="space-y-6">
@@ -614,7 +644,7 @@ export default function AdminDashboard({
                 </span>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-4">
+              <div className="grid gap-4 md:grid-cols-3">
                 {(Object.keys(servicesByStage) as ServiceDeliveryStage[]).map((stage) => (
                   <div key={stage} className="border border-outline-variant/15 bg-surface-container-low p-5">
                     <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
@@ -628,7 +658,7 @@ export default function AdminDashboard({
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-4">
+            <div className="grid gap-4 xl:grid-cols-3">
               {(Object.keys(servicesByStage) as ServiceDeliveryStage[]).map((stage) => (
                 <div key={stage} className="border border-outline-variant/15 bg-surface-container-low p-4">
                   <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">
@@ -688,7 +718,7 @@ export default function AdminDashboard({
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                    Arrasta entre Em processo e Em producao
+                    Arrasta entre Planeamento e Em producao
                   </span>
                   <ManualClientCreateModal />
                 </div>
@@ -696,7 +726,7 @@ export default function AdminDashboard({
 
               <div className="grid gap-4 xl:grid-cols-2">
                 {[
-                  { key: "em-processo", label: "Em processo", items: clientsInProcess },
+                  { key: "planeamento", label: "Planeamento", items: clientsInProcess },
                   { key: "em-producao", label: "Em producao", items: clientsInProduction },
                 ].map((column) => {
                   const zoneId = `client-${column.key}`;
@@ -708,7 +738,7 @@ export default function AdminDashboard({
                       activeDropZone={activeDropZone}
                       onDragOver={columnDragOver(zoneId)}
                       onDragLeave={columnDragLeave(zoneId)}
-                      onDrop={clientDrop(column.key as "em-processo" | "em-producao", zoneId)}
+                      onDrop={clientDrop(column.key as "planeamento" | "em-producao", zoneId)}
                     >
                       <div className="mb-4 flex items-center justify-between border-b border-outline-variant/12 pb-4">
                         <p className="font-headline text-xl font-bold text-on-surface">{column.label}</p>
@@ -789,28 +819,15 @@ export default function AdminDashboard({
                 </span>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-3">
-                {teamMembers.map((member) => {
-                  const memberTasks = tasks.filter((task) => task.assigneeId === member.id);
-                  return (
-                    <div key={member.id} className="border border-outline-variant/15 bg-surface-container-low p-6">
-                      <p className="font-headline text-xl font-bold text-on-surface">{member.name}</p>
-                      <p className="mt-1 font-body text-sm text-on-surface/55">{member.role}</p>
-                      <div className="mt-4 flex items-center justify-between">
-                        <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
-                          {teamMemberStatusLabels[member.status]}
-                        </span>
-                        <span className="font-body text-sm text-on-surface/55">{member.dailyCapacity}</span>
-                      </div>
-                      <p className="mt-4 font-body text-sm text-on-surface/55">{memberTasks.length} tarefas atribuidas</p>
-                    </div>
-                  );
-                })}
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {teamMembers.map((member) => (
+                  <TeamMemberAdminCard key={member.id} member={member} tasks={tasks} isAdmin={isAdmin} />
+                ))}
               </div>
             </div>
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(300px,0.42fr)_minmax(0,1fr)]">
-              <TeamMemberCreateForm />
+            <div className={`grid gap-4 ${isAdmin ? "xl:grid-cols-[minmax(300px,0.42fr)_minmax(0,1fr)]" : "xl:grid-cols-1"}`}>
+              {isAdmin ? <TeamMemberCreateForm /> : null}
               <TaskCreateForm teamMembers={teamMembers} clients={clients} />
             </div>
 
@@ -818,11 +835,11 @@ export default function AdminDashboard({
               <div className="mb-5 flex items-center justify-between">
                 <h2 className="font-headline text-3xl font-bold text-on-surface">Tarefas diarias</h2>
                 <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                  Arrasta entre Hoje, Em curso, Em revisao e Feito
+                  Arrasta entre Hoje, Planeamento, Produção, Revisão e Feito
                 </span>
               </div>
 
-              <div className="grid gap-4 xl:grid-cols-4">
+              <div className="grid gap-4 xl:grid-cols-5">
                 {(Object.keys(tasksByStatus) as Array<keyof typeof tasksByStatus>).map((statusKey) => {
                   const zoneId = `task-${statusKey}`;
 

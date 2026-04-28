@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     const task = await createTask({
       title: payload.title.trim(),
       description: payload.description?.trim() || "",
-      status: payload.status ?? "hoje",
+      status: "planeamento",
       priority: payload.priority ?? "media",
       assigneeId: payload.assigneeId,
       dueDate: payload.dueDate ?? null,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdminActionRequest } from "@/lib/auth";
-import { updateTask } from "@/lib/crm-store";
-import type { TaskPriority, TaskStatus } from "@/lib/crm-types";
+import { deleteTask, updateTask } from "@/lib/crm-store";
+import type { ServiceId, TaskPriority, TaskStatus } from "@/lib/crm-types";
 
 export async function POST(
   request: Request,
@@ -17,6 +17,7 @@ export async function POST(
         priority?: TaskPriority;
         assigneeId?: string;
         dueDate?: string | null;
+        serviceId?: ServiceId | null;
       }
     | null;
 
@@ -31,9 +32,30 @@ export async function POST(
       priority: payload.priority,
       assigneeId: payload.assigneeId,
       dueDate: payload.dueDate ?? null,
+      serviceId: payload.serviceId ?? null,
     });
 
     return NextResponse.json({ success: true, task });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Erro inesperado." },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  context: { params: Promise<{ id: string }> },
+) {
+  const { errorResponse } = await assertAdminActionRequest(request);
+  if (errorResponse) return errorResponse;
+
+  const { id } = await context.params;
+
+  try {
+    await deleteTask(id);
+    return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Erro inesperado." },

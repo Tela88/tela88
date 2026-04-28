@@ -21,6 +21,8 @@ export const focusAreaLabels: Record<string, string> = {
   trafego: "Tráfego",
   conversao: "Conversão",
   retencao: "Retenção",
+  "trabalho-pontual": "Trabalho pontual",
+  "trabalho-continuo": "Trabalho contínuo",
 };
 
 export const requestStatusLabels = {
@@ -32,13 +34,12 @@ export const requestStatusLabels = {
 } satisfies Record<string, string>;
 
 export const clientStageLabels: Record<ClientStage, string> = {
-  "em-processo": "Em processo",
+  planeamento: "Planeamento",
   "em-producao": "Em produção",
 };
 
 export const serviceDeliveryStageLabels: Record<ServiceDeliveryStage, string> = {
   planeado: "Planeado",
-  "em-processo": "Em processo",
   "em-producao": "Em produção",
   concluido: "Concluído",
 };
@@ -51,8 +52,9 @@ export const teamMemberStatusLabels: Record<TeamMemberStatus, string> = {
 
 export const taskStatusLabels: Record<TaskStatus, string> = {
   hoje: "Hoje",
-  "em-curso": "Em curso",
-  "em-revisao": "Em revisão",
+  planeamento: "Planeamento",
+  "em-producao": "Produção",
+  "em-revisao": "Revisão",
   feito: "Feito",
 };
 
