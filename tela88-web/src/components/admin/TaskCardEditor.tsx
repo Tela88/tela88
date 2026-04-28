@@ -1,21 +1,37 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { getServiceLabel, taskPriorityLabels, taskStatusLabels } from "@/lib/service-catalog";
-import type { ClientRecord, ServiceId, TaskPriority, TaskStatus, TeamMember, TeamTask } from "@/lib/crm-types";
+import {
+  getServiceLabel,
+  getSubserviceLabel,
+  getSubservicesForService,
+  taskPriorityLabels,
+  taskStatusLabels,
+} from "@/lib/service-catalog";
+import type {
+  ClientRecord,
+  ServiceId,
+  ServiceSubservice,
+  TaskPriority,
+  TaskStatus,
+  TeamMember,
+  TeamTask,
+} from "@/lib/crm-types";
 
 export default function TaskCardEditor({
   task,
   teamMembers,
   clients,
+  subservices,
   compact = false,
   initiallyCollapsed = false,
 }: {
   task: TeamTask;
   teamMembers: TeamMember[];
   clients: ClientRecord[];
+  subservices: ServiceSubservice[];
   compact?: boolean;
   initiallyCollapsed?: boolean;
 }) {
@@ -25,14 +41,16 @@ export default function TaskCardEditor({
   const [assigneeId, setAssigneeId] = useState(task.assigneeId);
   const [dueDate, setDueDate] = useState(task.dueDate ?? "");
   const [serviceId, setServiceId] = useState<ServiceId | "">(task.serviceId ?? "");
+  const [subServiceId, setSubServiceId] = useState(task.subServiceId ?? "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [collapsed, setCollapsed] = useState(initiallyCollapsed);
   const assignedMember = teamMembers.find((member) => member.id === assigneeId);
   const linkedClient = clients.find((client) => client.id === task.clientId);
-  const availableServices = useMemo(
-    () => linkedClient?.services ?? [],
-    [linkedClient],
+  const availableServices = useMemo(() => linkedClient?.services ?? [], [linkedClient]);
+  const availableSubservices = useMemo(
+    () => (serviceId ? getSubservicesForService(serviceId, subservices) : []),
+    [serviceId, subservices],
   );
   const compactMode = compact || collapsed;
 
@@ -50,15 +68,13 @@ export default function TaskCardEditor({
         assigneeId,
         dueDate: dueDate || null,
         serviceId: serviceId || null,
+        subServiceId: subServiceId || null,
       }),
     });
 
     setSaving(false);
 
-    if (!response.ok) {
-      return;
-    }
-
+    if (!response.ok) return;
     router.refresh();
   }
 
@@ -67,17 +83,12 @@ export default function TaskCardEditor({
     if (!confirmed) return;
 
     setDeleting(true);
-
     const response = await fetch(`/api/admin/tasks/${task.id}`, {
       method: "DELETE",
     });
-
     setDeleting(false);
 
-    if (!response.ok) {
-      return;
-    }
-
+    if (!response.ok) return;
     router.refresh();
   }
 
@@ -92,7 +103,7 @@ export default function TaskCardEditor({
           <div className="min-w-0">
             <p className="truncate font-headline text-sm font-bold text-on-surface">{task.title}</p>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-on-surface/55">
-              <span>{assignedMember?.name ?? "Sem atribuicao"}</span>
+              <span>{assignedMember?.name ?? "Sem atribuição"}</span>
               {task.dueDate ? <span>{task.dueDate}</span> : null}
             </div>
           </div>
@@ -112,12 +123,14 @@ export default function TaskCardEditor({
           {taskPriorityLabels[priority]}
         </span>
       </div>
+
       {!compactMode && task.description ? (
         <p className="mt-2 font-body text-sm leading-relaxed text-on-surface/55">{task.description}</p>
       ) : null}
+
       <div className="mt-3 space-y-1">
         <p className="font-body text-xs text-on-surface/45">
-          Responsavel: <span className="text-on-surface/70">{assignedMember?.name ?? "Sem atribuicao"}</span>
+          Responsável: <span className="text-on-surface/70">{assignedMember?.name ?? "Sem atribuição"}</span>
         </p>
         {task.dueDate ? (
           <p className="font-body text-xs text-on-surface/45">
@@ -134,7 +147,12 @@ export default function TaskCardEditor({
         ) : null}
         {task.serviceId ? (
           <p className="font-body text-xs text-on-surface/45">
-            Servico: <span className="text-on-surface/70">{getServiceLabel(task.serviceId)}</span>
+            Serviço: <span className="text-on-surface/70">{getServiceLabel(task.serviceId)}</span>
+          </p>
+        ) : null}
+        {task.subServiceId ? (
+          <p className="font-body text-xs text-on-surface/45">
+            Sub-serviço: <span className="text-on-surface/70">{getSubserviceLabel(task.subServiceId, subservices)}</span>
           </p>
         ) : null}
       </div>
@@ -184,18 +202,37 @@ export default function TaskCardEditor({
         />
 
         {linkedClient ? (
-          <select
-            value={serviceId}
-            onChange={(event) => setServiceId(event.target.value as ServiceId | "")}
-            className={`w-full border border-outline-variant/20 bg-surface-container-low font-body text-on-surface outline-none focus:border-primary-container ${compactMode ? "px-2 py-2 text-xs" : "px-3 py-2 text-sm"}`}
-          >
-            <option value="">Sem servico associado</option>
-            {availableServices.map((service) => (
-              <option key={service.id} value={service.id}>
-                {getServiceLabel(service.id)}
-              </option>
-            ))}
-          </select>
+          <>
+            <select
+              value={serviceId}
+              onChange={(event) => {
+                setServiceId(event.target.value as ServiceId | "");
+                setSubServiceId("");
+              }}
+              className={`w-full border border-outline-variant/20 bg-surface-container-low font-body text-on-surface outline-none focus:border-primary-container ${compactMode ? "px-2 py-2 text-xs" : "px-3 py-2 text-sm"}`}
+            >
+              <option value="">Sem serviço associado</option>
+              {availableServices.map((service) => (
+                <option key={service.id} value={service.id}>
+                  {getServiceLabel(service.id)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={subServiceId}
+              onChange={(event) => setSubServiceId(event.target.value)}
+              disabled={!serviceId}
+              className={`w-full border border-outline-variant/20 bg-surface-container-low font-body text-on-surface outline-none focus:border-primary-container disabled:opacity-60 ${compactMode ? "px-2 py-2 text-xs" : "px-3 py-2 text-sm"}`}
+            >
+              <option value="">Sem sub-serviço</option>
+              {availableSubservices.map((subservice) => (
+                <option key={subservice.id} value={subservice.id}>
+                  {subservice.name}
+                </option>
+              ))}
+            </select>
+          </>
         ) : null}
       </div>
 

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
 import { taskStatusLabels } from "@/lib/service-catalog";
-import type { ClientRecord, TeamMember, TeamTask } from "@/lib/crm-types";
+import type { ClientRecord, ServiceSubservice, TeamMember, TeamTask } from "@/lib/crm-types";
 
 type DragPayload = { type: "task"; id: string };
 
@@ -13,11 +13,13 @@ export default function ClientTaskBoard({
   tasks,
   teamMembers,
   clients,
+  subservices,
 }: {
   clientId: string;
   tasks: TeamTask[];
   teamMembers: TeamMember[];
   clients: ClientRecord[];
+  subservices: ServiceSubservice[];
 }) {
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
@@ -82,6 +84,8 @@ export default function ClientTaskBoard({
           priority: task.priority,
           assigneeId: task.assigneeId,
           dueDate: task.dueDate,
+          serviceId: task.serviceId,
+          subServiceId: task.subServiceId,
         }),
       });
 
@@ -134,6 +138,7 @@ export default function ClientTaskBoard({
                       task={task}
                       teamMembers={teamMembers}
                       clients={clients}
+                      subservices={subservices}
                       compact={statusKey === "feito"}
                     />
                   </div>

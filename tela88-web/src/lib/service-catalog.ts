@@ -2,18 +2,19 @@ import type {
   ClientStage,
   ServiceDeliveryStage,
   ServiceId,
+  ServiceSubservice,
   TaskPriority,
   TaskStatus,
   TeamMemberStatus,
 } from "@/lib/crm-types";
 
-export const serviceCatalog: { id: ServiceId; label: string }[] = [
-  { id: "websites-crm", label: "Websites e CRM" },
-  { id: "anuncios-trafego-organico", label: "Anúncios e Tráfego Orgânico" },
-  { id: "funis-conversao", label: "Funis de Conversão" },
-  { id: "consultoria-marketing", label: "Consultoria de Marketing" },
-  { id: "design-grafico", label: "Design Gráfico" },
-  { id: "gestao-redes-sociais", label: "Gestão de Redes Sociais" },
+export const serviceCatalog: { id: ServiceId; label: string; summary: string }[] = [
+  { id: "websites-crm", label: "Websites e CRM", summary: "Plataformas, landing pages, CRM e automações base." },
+  { id: "anuncios-trafego-organico", label: "Anúncios e Tráfego Orgânico", summary: "Aquisição paga, SEO editorial e performance contínua." },
+  { id: "funis-conversao", label: "Funis de Conversão", summary: "Captação, nurturing e sequências para fechar mais leads." },
+  { id: "consultoria-marketing", label: "Consultoria de Marketing", summary: "Planeamento, posicionamento e direção estratégica." },
+  { id: "design-grafico", label: "Design Gráfico", summary: "Peças visuais, criativos e identidade aplicada ao digital." },
+  { id: "gestao-redes-sociais", label: "Gestão de Redes Sociais", summary: "Calendário, publicação e acompanhamento editorial." },
 ];
 
 export const focusAreaLabels: Record<string, string> = {
@@ -66,4 +67,17 @@ export const taskPriorityLabels: Record<TaskPriority, string> = {
 
 export function getServiceLabel(serviceId: ServiceId) {
   return serviceCatalog.find((item) => item.id === serviceId)?.label ?? serviceId;
+}
+
+export function getServiceSummary(serviceId: ServiceId) {
+  return serviceCatalog.find((item) => item.id === serviceId)?.summary ?? "";
+}
+
+export function getSubservicesForService(serviceId: ServiceId, subservices: ServiceSubservice[]) {
+  return subservices.filter((item) => item.serviceId === serviceId);
+}
+
+export function getSubserviceLabel(subServiceId: string | null | undefined, subservices: ServiceSubservice[]) {
+  if (!subServiceId) return "";
+  return subservices.find((item) => item.id === subServiceId)?.name ?? "";
 }

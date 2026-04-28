@@ -17,7 +17,7 @@ export default async function ReservedAreaPage({
     redirect("/area-reservada/login");
   }
 
-  const { requests, clients, teamMembers, tasks } = await getCrmDashboardData();
+  const { requests, clients, teamMembers, tasks, serviceSubservices } = await getCrmDashboardData();
   const pendingRequests = requests.filter((item) => item.status === "pending");
   const scheduledMeetings = requests.filter((item) => item.status === "agendado");
   const attendedMeetings = requests.filter((item) => item.status === "atendido");
@@ -49,6 +49,7 @@ export default async function ReservedAreaPage({
           clients={clients}
           teamMembers={teamMembers}
           tasks={tasks}
+          serviceSubservices={serviceSubservices}
           activeTab={activeTab}
           currentUser={admin}
         />

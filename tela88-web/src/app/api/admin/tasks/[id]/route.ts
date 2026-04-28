@@ -14,11 +14,12 @@ export async function POST(
   const payload = (await request.json().catch(() => null)) as
     | {
         status?: TaskStatus;
-        priority?: TaskPriority;
-        assigneeId?: string;
-        dueDate?: string | null;
-        serviceId?: ServiceId | null;
-      }
+      priority?: TaskPriority;
+      assigneeId?: string;
+      dueDate?: string | null;
+      serviceId?: ServiceId | null;
+      subServiceId?: string | null;
+    }
     | null;
 
   if (!payload?.status || !payload.priority || !payload.assigneeId) {
@@ -33,6 +34,7 @@ export async function POST(
       assigneeId: payload.assigneeId,
       dueDate: payload.dueDate ?? null,
       serviceId: payload.serviceId ?? null,
+      subServiceId: payload.subServiceId ?? null,
     });
 
     return NextResponse.json({ success: true, task });

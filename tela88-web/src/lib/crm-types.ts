@@ -22,6 +22,14 @@ export type PackService = {
   stage: ServiceDeliveryStage;
 };
 
+export type ServiceSubservice = {
+  id: string;
+  serviceId: ServiceId;
+  name: string;
+  slug: string;
+  description: string;
+};
+
 export type TeamMember = {
   id: string;
   name: string;
@@ -52,6 +60,7 @@ export type TeamTask = {
   dueDate: string | null;
   clientId: string | null;
   serviceId: ServiceId | null;
+  subServiceId: string | null;
 };
 
 export type ConsultationRequest = {
@@ -103,4 +112,5 @@ export type CrrmData = {
   clients: ClientRecord[];
   teamMembers: TeamMember[];
   tasks: TeamTask[];
+  serviceSubservices: ServiceSubservice[];
 };

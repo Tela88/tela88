@@ -13,6 +13,7 @@ import type {
   ServiceDeliveryStage,
   ServiceId,
   ServiceStageMap,
+  ServiceSubservice,
   TaskPriority,
   TaskStatus,
   TeamMember,
@@ -72,6 +73,14 @@ type ClientServiceRow = {
   stage: ServiceDeliveryStage;
 };
 
+type ServiceSubserviceRow = {
+  id: string;
+  service_id: ServiceId;
+  slug: string;
+  name: string;
+  description: string;
+};
+
 type TaskRow = {
   id: string;
   title: string;
@@ -82,6 +91,7 @@ type TaskRow = {
   due_date: string | null;
   client_id: string | null;
   service_id: ServiceId | null;
+  sub_service_id: string | null;
 };
 
 function mapRequest(row: RequestRow): ConsultationRequest {
@@ -141,6 +151,16 @@ function mapClient(row: ClientRow, services: ClientServiceRow[]): ClientRecord {
   };
 }
 
+function mapSubservice(row: ServiceSubserviceRow): ServiceSubservice {
+  return {
+    id: row.id,
+    serviceId: row.service_id,
+    slug: row.slug,
+    name: row.name,
+    description: row.description,
+  };
+}
+
 function mapTask(row: TaskRow): TeamTask {
   return {
     id: row.id,
@@ -152,6 +172,7 @@ function mapTask(row: TaskRow): TeamTask {
     dueDate: row.due_date,
     clientId: row.client_id,
     serviceId: row.service_id,
+    subServiceId: row.sub_service_id,
   };
 }
 
@@ -170,6 +191,14 @@ async function getClientServices() {
   return selectRows<ClientServiceRow>("client_services", {
     order: "created_at.asc",
   });
+}
+
+export async function getServiceSubservices() {
+  const rows = await selectRows<ServiceSubserviceRow>("service_subservices", {
+    order: "service_id.asc,name.asc",
+  });
+
+  return rows.map(mapSubservice);
 }
 
 export async function createConsultationRequest(
@@ -226,11 +255,12 @@ export async function getTasks() {
 }
 
 export async function getCrmDashboardData(): Promise<CrrmData> {
-  const [requests, clients, teamMembers, tasks] = await Promise.all([
+  const [requests, clients, teamMembers, tasks, serviceSubservices] = await Promise.all([
     getConsultationRequests(),
     getClients(),
     getTeamMembers(),
     getTasks(),
+    getServiceSubservices(),
   ]);
 
   return {
@@ -238,6 +268,7 @@ export async function getCrmDashboardData(): Promise<CrrmData> {
     clients,
     teamMembers,
     tasks,
+    serviceSubservices,
   };
 }
 
@@ -555,6 +586,43 @@ export async function createManualClient(input: {
   return getClientById(row.id);
 }
 
+export async function createServiceSubservice(input: {
+  serviceId: ServiceId;
+  name: string;
+  description: string;
+}) {
+  const slug =
+    input.name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || randomUUID();
+
+  const row = await insertRow<ServiceSubserviceRow>("service_subservices", {
+    service_id: input.serviceId,
+    slug,
+    name: input.name.trim(),
+    description: input.description.trim(),
+  });
+
+  if (!row) {
+    throw new Error("Nao foi possivel criar o sub-servico.");
+  }
+
+  return mapSubservice(row);
+}
+
+export async function deleteServiceSubservice(id: string) {
+  const deleted = await deleteRows<ServiceSubserviceRow>("service_subservices", { id });
+
+  if (!deleted.length) {
+    throw new Error("Sub-servico nao encontrado.");
+  }
+
+  return { id };
+}
+
 export async function updateTask(input: {
   id: string;
   status: TaskStatus;
@@ -562,6 +630,7 @@ export async function updateTask(input: {
   assigneeId: string;
   dueDate: string | null;
   serviceId: ServiceId | null;
+  subServiceId: string | null;
 }) {
   const rows = await updateRows<TaskRow>(
     "team_tasks",
@@ -572,6 +641,7 @@ export async function updateTask(input: {
       assignee_id: input.assigneeId || null,
       due_date: input.dueDate,
       service_id: input.serviceId,
+      sub_service_id: input.subServiceId,
       updated_at: new Date().toISOString(),
     },
   );
@@ -592,6 +662,7 @@ export async function createTask(input: {
   dueDate: string | null;
   clientId: string | null;
   serviceId: ServiceId | null;
+  subServiceId: string | null;
 }) {
   const row = await insertRow<TaskRow>("team_tasks", {
     title: input.title,
@@ -602,6 +673,7 @@ export async function createTask(input: {
     due_date: input.dueDate,
     client_id: input.clientId,
     service_id: input.serviceId,
+    sub_service_id: input.subServiceId,
   });
 
   if (!row) {

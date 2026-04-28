@@ -2,32 +2,40 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { getServiceLabel, taskPriorityLabels } from "@/lib/service-catalog";
-import type { ClientRecord, ServiceId, TaskPriority, TeamMember } from "@/lib/crm-types";
+import { getServiceLabel, getSubservicesForService, taskPriorityLabels } from "@/lib/service-catalog";
+import type { ClientRecord, ServiceId, ServiceSubservice, TaskPriority, TeamMember } from "@/lib/crm-types";
 
 export default function TaskCreateForm({
   teamMembers,
   clients,
+  subservices,
   defaultClientId = "",
 }: {
   teamMembers: TeamMember[];
   clients: ClientRecord[];
+  subservices: ServiceSubservice[];
   defaultClientId?: string;
 }) {
   const router = useRouter();
+  const [clientId, setClientId] = useState(defaultClientId);
+  const [serviceId, setServiceId] = useState<ServiceId | "">("");
+  const [subServiceId, setSubServiceId] = useState("");
+  const [assigneeId, setAssigneeId] = useState(teamMembers[0]?.id ?? "");
+  const [dueDate, setDueDate] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>("media");
-  const [assigneeId, setAssigneeId] = useState(teamMembers[0]?.id ?? "");
-  const [dueDate, setDueDate] = useState("");
-  const [clientId, setClientId] = useState(defaultClientId);
-  const [serviceId, setServiceId] = useState<ServiceId | "">("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   const selectedClient = useMemo(
     () => clients.find((client) => client.id === clientId) ?? null,
     [clientId, clients],
+  );
+  const availableServices = selectedClient?.services ?? [];
+  const availableSubservices = useMemo(
+    () => (serviceId ? getSubservicesForService(serviceId, subservices) : []),
+    [serviceId, subservices],
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -48,6 +56,7 @@ export default function TaskCreateForm({
         dueDate: dueDate || null,
         clientId: clientId || null,
         serviceId: serviceId || null,
+        subServiceId: subServiceId || null,
       }),
     });
 
@@ -59,11 +68,13 @@ export default function TaskCreateForm({
       return;
     }
 
+    setServiceId("");
+    setSubServiceId("");
+    setAssigneeId(teamMembers[0]?.id ?? "");
+    setDueDate("");
     setTitle("");
     setDescription("");
     setPriority("media");
-    setDueDate("");
-    setServiceId("");
     if (!defaultClientId) {
       setClientId("");
     }
@@ -80,89 +91,107 @@ export default function TaskCreateForm({
       </div>
 
       <div className="grid gap-3">
+        <select
+          value={clientId}
+          onChange={(event) => {
+            setClientId(event.target.value);
+            setServiceId("");
+            setSubServiceId("");
+          }}
+          disabled={Boolean(defaultClientId)}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
+        >
+          <option value="">Cliente</option>
+          {clients.map((client) => (
+            <option key={client.id} value={client.id}>
+              {client.company || client.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={serviceId}
+          onChange={(event) => {
+            setServiceId(event.target.value as ServiceId | "");
+            setSubServiceId("");
+          }}
+          disabled={!selectedClient}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
+        >
+          <option value="">Serviço</option>
+          {availableServices.map((service) => (
+            <option key={service.id} value={service.id}>
+              {getServiceLabel(service.id)}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={subServiceId}
+          onChange={(event) => setSubServiceId(event.target.value)}
+          disabled={!serviceId}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
+        >
+          <option value="">Sub-serviço</option>
+          {availableSubservices.map((subservice) => (
+            <option key={subservice.id} value={subservice.id}>
+              {subservice.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={assigneeId}
+          onChange={(event) => setAssigneeId(event.target.value)}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+        >
+          <option value="">Colaborador</option>
+          {teamMembers.map((member) => (
+            <option key={member.id} value={member.id}>
+              {member.name}
+            </option>
+          ))}
+        </select>
+
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(event) => setDueDate(event.target.value)}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+        />
+
         <input
           type="text"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
-          placeholder="Titulo da tarefa"
+          placeholder="Título"
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
+
         <textarea
           value={description}
           onChange={(event) => setDescription(event.target.value)}
-          rows={3}
-          placeholder="Descricao curta"
+          rows={4}
+          placeholder="Descrição"
           className="w-full resize-none border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
         />
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="border border-outline-variant/20 bg-surface px-3 py-3">
-            <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">
-              Estado inicial
-            </p>
-            <p className="mt-2 font-body text-sm text-on-surface">Planeamento</p>
-          </div>
-          <select
-            value={priority}
-            onChange={(event) => setPriority(event.target.value as TaskPriority)}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-          >
-            {Object.entries(taskPriorityLabels).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+
+        <div className="border border-outline-variant/20 bg-surface px-3 py-3">
+          <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Estado inicial</p>
+          <p className="mt-2 font-body text-sm text-on-surface">Planeamento</p>
         </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <select
-            value={assigneeId}
-            onChange={(event) => setAssigneeId(event.target.value)}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-          >
-            <option value="">Selecionar responsavel</option>
-            {teamMembers.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            value={dueDate}
-            onChange={(event) => setDueDate(event.target.value)}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-          />
-        </div>
-        <div className="grid gap-3 md:grid-cols-2">
-          <select
-            value={clientId}
-            onChange={(event) => {
-              setClientId(event.target.value);
-              setServiceId("");
-            }}
-            disabled={Boolean(defaultClientId)}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
-          >
-            <option value="">Sem cliente associado</option>
-            {clients.map((client) => (
-              <option key={client.id} value={client.id}>
-                {client.company || client.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={serviceId}
-            onChange={(event) => setServiceId(event.target.value as ServiceId | "")}
-            className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-          >
-            <option value="">Sem servico associado</option>
-            {selectedClient?.services.map((service) => (
-              <option key={service.id} value={service.id}>
-                {getServiceLabel(service.id)}
-              </option>
-            ))}
-          </select>
-        </div>
+
+        <select
+          value={priority}
+          onChange={(event) => setPriority(event.target.value as TaskPriority)}
+          className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+        >
+          {Object.entries(taskPriorityLabels).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {error ? <p className="mt-3 font-body text-xs text-error">{error}</p> : null}

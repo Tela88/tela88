@@ -11,13 +11,14 @@ export async function POST(request: Request) {
     | {
         title?: string;
         description?: string;
-        status?: TaskStatus;
-        priority?: TaskPriority;
-        assigneeId?: string;
-        dueDate?: string | null;
-        clientId?: string | null;
-        serviceId?: ServiceId | null;
-      }
+      status?: TaskStatus;
+      priority?: TaskPriority;
+      assigneeId?: string;
+      dueDate?: string | null;
+      clientId?: string | null;
+      serviceId?: ServiceId | null;
+      subServiceId?: string | null;
+    }
     | null;
 
   if (!payload?.title?.trim() || !payload.assigneeId) {
@@ -34,6 +35,7 @@ export async function POST(request: Request) {
       dueDate: payload.dueDate ?? null,
       clientId: payload.clientId ?? null,
       serviceId: payload.serviceId ?? null,
+      subServiceId: payload.subServiceId ?? null,
     });
 
     return NextResponse.json({ success: true, task });

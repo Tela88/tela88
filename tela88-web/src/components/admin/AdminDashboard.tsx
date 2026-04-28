@@ -6,6 +6,7 @@ import { useState } from "react";
 import ManualClientCreateModal from "@/components/admin/ManualClientCreateModal";
 import MeetingStageActions from "@/components/admin/MeetingStageActions";
 import PendingRequestActions from "@/components/admin/PendingRequestActions";
+import ServiceSubservicePanel from "@/components/admin/ServiceSubservicePanel";
 import TaskCardEditor from "@/components/admin/TaskCardEditor";
 import TaskCreateForm from "@/components/admin/TaskCreateForm";
 import TeamMemberAdminCard from "@/components/admin/TeamMemberAdminCard";
@@ -24,6 +25,7 @@ import type {
   ConsultationRequest,
   ServiceDeliveryStage,
   ServiceId,
+  ServiceSubservice,
   TeamMember,
   TeamTask,
 } from "@/lib/crm-types";
@@ -38,6 +40,7 @@ type AdminDashboardProps = {
   clients: ClientRecord[];
   teamMembers: TeamMember[];
   tasks: TeamTask[];
+  serviceSubservices: ServiceSubservice[];
   activeTab: DashboardTab;
   currentUser: AuthenticatedUser;
 };
@@ -99,6 +102,7 @@ export default function AdminDashboard({
   clients,
   teamMembers,
   tasks,
+  serviceSubservices,
   activeTab,
   currentUser,
 }: AdminDashboardProps) {
@@ -227,6 +231,8 @@ export default function AdminDashboard({
         priority: task.priority,
         assigneeId: task.assigneeId,
         dueDate: task.dueDate,
+        serviceId: task.serviceId,
+        subServiceId: task.subServiceId,
       });
     };
   }
@@ -544,6 +550,7 @@ export default function AdminDashboard({
                         task={task}
                         teamMembers={teamMembers}
                         clients={clients}
+                        subservices={serviceSubservices}
                       />
                     ))
                   )}
@@ -564,6 +571,7 @@ export default function AdminDashboard({
                           task={task}
                           teamMembers={teamMembers}
                           clients={clients}
+                          subservices={serviceSubservices}
                           initiallyCollapsed
                         />
                       ))}
@@ -703,6 +711,8 @@ export default function AdminDashboard({
                 </div>
               ))}
             </div>
+
+            <ServiceSubservicePanel subservices={serviceSubservices} isAdmin={isAdmin} />
           </div>
         ) : null}
 
@@ -828,7 +838,7 @@ export default function AdminDashboard({
 
             <div className={`grid gap-4 ${isAdmin ? "xl:grid-cols-[minmax(300px,0.42fr)_minmax(0,1fr)]" : "xl:grid-cols-1"}`}>
               {isAdmin ? <TeamMemberCreateForm /> : null}
-              <TaskCreateForm teamMembers={teamMembers} clients={clients} />
+              <TaskCreateForm teamMembers={teamMembers} clients={clients} subservices={serviceSubservices} />
             </div>
 
             <div>
@@ -871,7 +881,12 @@ export default function AdminDashboard({
                               onDragStart={dragStart({ type: "task", id: task.id })}
                               className="cursor-grab active:cursor-grabbing"
                             >
-                              <TaskCardEditor task={task} teamMembers={teamMembers} clients={clients} />
+                              <TaskCardEditor
+                                task={task}
+                                teamMembers={teamMembers}
+                                clients={clients}
+                                subservices={serviceSubservices}
+                              />
                             </div>
                           ))
                         )}

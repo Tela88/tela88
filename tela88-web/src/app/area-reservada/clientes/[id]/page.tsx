@@ -2,7 +2,7 @@ import ClientManagementForm from "@/components/admin/ClientManagementForm";
 import ClientTaskBoard from "@/components/admin/ClientTaskBoard";
 import TaskCreateForm from "@/components/admin/TaskCreateForm";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { getClientById, getClients, getTasks, getTeamMembers } from "@/lib/crm-store";
+import { getClientById, getClients, getServiceSubservices, getTasks, getTeamMembers } from "@/lib/crm-store";
 import { focusAreaLabels, getServiceLabel, serviceDeliveryStageLabels } from "@/lib/service-catalog";
 import { notFound, redirect } from "next/navigation";
 
@@ -19,7 +19,12 @@ export default async function ClientDetailPage({
 
   const { id } = await params;
   const client = await getClientById(id);
-  const [teamMembers, tasks, clients] = await Promise.all([getTeamMembers(), getTasks(), getClients()]);
+  const [teamMembers, tasks, clients, serviceSubservices] = await Promise.all([
+    getTeamMembers(),
+    getTasks(),
+    getClients(),
+    getServiceSubservices(),
+  ]);
 
   if (!client) {
     notFound();
@@ -59,7 +64,12 @@ export default async function ClientDetailPage({
             </div>
 
             <div className="grid gap-4 lg:grid-cols-[minmax(320px,0.42fr)_minmax(0,1fr)]">
-              <TaskCreateForm teamMembers={teamMembers} clients={clients} defaultClientId={client.id} />
+              <TaskCreateForm
+                teamMembers={teamMembers}
+                clients={clients}
+                subservices={serviceSubservices}
+                defaultClientId={client.id}
+              />
 
               <div className="border border-outline-variant/15 bg-surface-container-low p-5">
                 <div className="mb-4 flex items-center justify-between">
@@ -106,6 +116,7 @@ export default async function ClientDetailPage({
               tasks={clientTasks}
               teamMembers={teamMembers}
               clients={clients}
+              subservices={serviceSubservices}
             />
           </div>
         </section>
