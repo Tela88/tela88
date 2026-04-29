@@ -5,18 +5,18 @@ import { useMemo, useState } from "react";
 import {
   getServiceLabel,
   internalUserRoleLabels,
-  serviceCatalog,
   teamMemberStatusLabels,
 } from "@/lib/service-catalog";
-import type { InternalUserRole, ServiceId, TeamMember, TeamMemberStatus, TeamTask } from "@/lib/crm-types";
+import type { InternalUserRole, ServiceDefinition, ServiceId, TeamMember, TeamMemberStatus, TeamTask } from "@/lib/crm-types";
 
 type TeamMemberAdminCardProps = {
   member: TeamMember;
   tasks: TeamTask[];
+  services: ServiceDefinition[];
   isAdmin: boolean;
 };
 
-export default function TeamMemberAdminCard({ member, tasks, isAdmin }: TeamMemberAdminCardProps) {
+export default function TeamMemberAdminCard({ member, tasks, services, isAdmin }: TeamMemberAdminCardProps) {
   const router = useRouter();
   const memberTasks = useMemo(() => tasks.filter((task) => task.assigneeId === member.id), [member.id, tasks]);
   const [editing, setEditing] = useState(false);
@@ -156,7 +156,7 @@ export default function TeamMemberAdminCard({ member, tasks, isAdmin }: TeamMemb
                   key={`${member.id}-${serviceId}`}
                   className="border border-primary-container/18 bg-primary-container/8 px-2 py-1 font-body text-xs text-primary-container"
                 >
-                  {getServiceLabel(serviceId)}
+                  {getServiceLabel(serviceId, services)}
                 </span>
               ))
             )}
@@ -270,7 +270,7 @@ export default function TeamMemberAdminCard({ member, tasks, isAdmin }: TeamMemb
             </span>
           </div>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {serviceCatalog.map((service) => {
+            {services.map((service) => {
               const active = serviceIds.includes(service.id);
 
               return (
@@ -288,7 +288,7 @@ export default function TeamMemberAdminCard({ member, tasks, isAdmin }: TeamMemb
                       : "border-outline-variant/20 bg-surface-container-low text-on-surface/72"
                   }`}
                 >
-                  {getServiceLabel(service.id)}
+                  {getServiceLabel(service.id, services)}
                 </button>
               );
             })}

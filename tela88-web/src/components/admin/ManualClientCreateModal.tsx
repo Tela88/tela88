@@ -4,10 +4,9 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   clientStageLabels,
-  serviceCatalog,
   serviceDeliveryStageLabels,
 } from "@/lib/service-catalog";
-import type { ClientStage, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
+import type { ClientStage, ServiceDefinition, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
 
 type FormState = {
   name: string;
@@ -41,7 +40,7 @@ const initialForm: FormState = {
   notes: "",
 };
 
-export default function ManualClientCreateModal() {
+export default function ManualClientCreateModal({ services }: { services: ServiceDefinition[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -226,7 +225,7 @@ export default function ManualClientCreateModal() {
                       </span>
                     </div>
                     <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                      {serviceCatalog.map((service) => {
+                      {services.map((service) => {
                         const active = selectedServices.includes(service.id);
                         return (
                           <button key={service.id} type="button" onClick={() => toggleService(service.id)} className={`border px-4 py-4 text-left font-body text-sm transition-colors ${active ? "border-primary-container bg-primary-container text-on-primary" : "border-outline-variant/20 bg-surface text-on-surface/70"}`}>
@@ -265,7 +264,7 @@ export default function ManualClientCreateModal() {
                           ) : (
                             groupedServices[stage].map((serviceId) => (
                               <div key={serviceId} className="border border-outline-variant/12 bg-surface-container-low p-3">
-                                <p className="font-body text-sm text-on-surface">{serviceCatalog.find((item) => item.id === serviceId)?.label}</p>
+                                <p className="font-body text-sm text-on-surface">{services.find((item) => item.id === serviceId)?.label}</p>
                                 <select value={serviceStages[serviceId] ?? "planeado"} onChange={(event) => updateServiceStage(serviceId, event.target.value as ServiceDeliveryStage)} className="mt-3 w-full border border-outline-variant/20 bg-surface px-3 py-2 font-body text-sm text-on-surface outline-none focus:border-primary-container">
                                   {Object.entries(serviceDeliveryStageLabels).map(([value, label]) => (
                                     <option key={value} value={value}>{label}</option>

@@ -2,13 +2,7 @@ export type RequestStatus = "pending" | "agendado" | "atendido" | "cliente" | "f
 
 export type ClientStage = "planeamento" | "em-producao";
 
-export type ServiceId =
-  | "websites-crm"
-  | "anuncios-trafego-organico"
-  | "funis-conversao"
-  | "consultoria-marketing"
-  | "design-grafico"
-  | "gestao-redes-sociais";
+export type ServiceId = string;
 
 export type ServiceDeliveryStage = "planeado" | "em-producao" | "concluido";
 export type ServiceStageMap = Partial<Record<ServiceId, ServiceDeliveryStage>>;
@@ -16,6 +10,12 @@ export type TeamMemberStatus = "disponivel" | "ocupado" | "offline";
 export type TaskStatus = "hoje" | "planeamento" | "em-producao" | "em-revisao" | "feito";
 export type TaskPriority = "alta" | "media" | "baixa";
 export type InternalUserRole = "admin" | "collaborator" | "secretaria";
+
+export type ServiceDefinition = {
+  id: ServiceId;
+  label: string;
+  summary: string;
+};
 
 export type PackService = {
   id: ServiceId;
@@ -117,5 +117,6 @@ export type CrrmData = {
   clients: ClientRecord[];
   teamMembers: TeamMember[];
   tasks: TeamTask[];
+  services: ServiceDefinition[];
   serviceSubservices: ServiceSubservice[];
 };

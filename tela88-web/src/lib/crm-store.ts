@@ -1,5 +1,6 @@
 ﻿import { randomUUID } from "node:crypto";
 import { createPasswordHash } from "@/lib/auth";
+import { serviceCatalog } from "@/lib/service-catalog";
 import { deleteRows, insertRow, selectRows, selectSingle, updateRows } from "@/lib/supabase-rest";
 import type {
   ClientRecord,
@@ -10,6 +11,7 @@ import type {
   InternalUserRole,
   PackService,
   RequestStatus,
+  ServiceDefinition,
   ServiceDeliveryStage,
   ServiceId,
   ServiceStageMap,
@@ -72,6 +74,12 @@ type ClientServiceRow = {
   client_id: string;
   service_id: ServiceId;
   stage: ServiceDeliveryStage;
+};
+
+type ServiceRow = {
+  id: ServiceId;
+  label: string;
+  summary: string;
 };
 
 type InternalUserServiceRow = {
@@ -196,6 +204,14 @@ function mapSubservice(row: ServiceSubserviceRow): ServiceSubservice {
   };
 }
 
+function mapService(row: ServiceRow): ServiceDefinition {
+  return {
+    id: row.id,
+    label: row.label,
+    summary: row.summary,
+  };
+}
+
 function mapTask(row: TaskRow): TeamTask {
   const effectivePriority = getEffectiveTaskPriority(row.priority, row.due_date, row.priority_margin_days);
 
@@ -230,6 +246,18 @@ async function getClientServices() {
   return selectRows<ClientServiceRow>("client_services", {
     order: "created_at.asc",
   });
+}
+
+export async function getServices() {
+  try {
+    const rows = await selectRows<ServiceRow>("services", {
+      order: "created_at.asc,label.asc",
+    });
+
+    return rows.map(mapService);
+  } catch {
+    return serviceCatalog;
+  }
 }
 
 async function getInternalUserServices() {
@@ -310,11 +338,12 @@ export async function getTasks() {
 }
 
 export async function getCrmDashboardData(): Promise<CrrmData> {
-  const [requests, clients, teamMembers, tasks, serviceSubservices] = await Promise.all([
+  const [requests, clients, teamMembers, tasks, services, serviceSubservices] = await Promise.all([
     getConsultationRequests(),
     getClients(),
     getTeamMembers(),
     getTasks(),
+    getServices(),
     getServiceSubservices(),
   ]);
 
@@ -323,6 +352,7 @@ export async function getCrmDashboardData(): Promise<CrrmData> {
     clients,
     teamMembers,
     tasks,
+    services,
     serviceSubservices,
   };
 }
@@ -707,6 +737,39 @@ export async function createServiceSubservice(input: {
   }
 
   return mapSubservice(row);
+}
+
+export async function createService(input: {
+  label: string;
+  summary: string;
+}) {
+  const id =
+    input.label
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || randomUUID();
+
+  const existing = await selectSingle<ServiceRow>("services", {
+    filters: { id },
+  });
+
+  if (existing) {
+    throw new Error("Ja existe um servico com este identificador.");
+  }
+
+  const row = await insertRow<ServiceRow>("services", {
+    id,
+    label: input.label.trim(),
+    summary: input.summary.trim(),
+  });
+
+  if (!row) {
+    throw new Error("Nao foi possivel criar o servico.");
+  }
+
+  return mapService(row);
 }
 
 export async function deleteServiceSubservice(id: string) {

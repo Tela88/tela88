@@ -2,7 +2,7 @@ import ClientManagementForm from "@/components/admin/ClientManagementForm";
 import ClientTaskBoard from "@/components/admin/ClientTaskBoard";
 import TaskCreateForm from "@/components/admin/TaskCreateForm";
 import { getAuthenticatedAdmin } from "@/lib/auth";
-import { getClientById, getClients, getServiceSubservices, getTasks, getTeamMembers } from "@/lib/crm-store";
+import { getClientById, getClients, getServiceSubservices, getServices, getTasks, getTeamMembers } from "@/lib/crm-store";
 import { focusAreaLabels, getServiceLabel, serviceDeliveryStageLabels } from "@/lib/service-catalog";
 import { notFound, redirect } from "next/navigation";
 
@@ -19,10 +19,11 @@ export default async function ClientDetailPage({
 
   const { id } = await params;
   const client = await getClientById(id);
-  const [teamMembers, tasks, clients, serviceSubservices] = await Promise.all([
+  const [teamMembers, tasks, clients, services, serviceSubservices] = await Promise.all([
     getTeamMembers(),
     getTasks(),
     getClients(),
+    getServices(),
     getServiceSubservices(),
   ]);
 
@@ -52,7 +53,7 @@ export default async function ClientDetailPage({
           </p>
         </div>
 
-        <ClientManagementForm client={client} canEdit={admin.role === "admin"} />
+        <ClientManagementForm client={client} canEdit={admin.role === "admin"} services={services} />
 
         <section className="mt-10 space-y-8">
           <div className="border-t border-outline-variant/15 pt-8">
@@ -67,6 +68,7 @@ export default async function ClientDetailPage({
               <TaskCreateForm
                 teamMembers={teamMembers}
                 clients={clients}
+                services={services}
                 subservices={serviceSubservices}
                 defaultClientId={client.id}
               />
@@ -90,7 +92,7 @@ export default async function ClientDetailPage({
                     client.services.map((service) => (
                       <div key={service.id} className="border border-outline-variant/12 bg-surface p-4">
                         <p className="font-headline text-lg font-bold text-on-surface">
-                          {getServiceLabel(service.id)}
+                          {getServiceLabel(service.id, services)}
                         </p>
                         <p className="mt-2 font-body text-sm text-on-surface/55">
                           {serviceDeliveryStageLabels[service.stage]}
@@ -116,6 +118,7 @@ export default async function ClientDetailPage({
               tasks={clientTasks}
               teamMembers={teamMembers}
               clients={clients}
+              services={services}
               subservices={serviceSubservices}
               currentUser={admin}
             />

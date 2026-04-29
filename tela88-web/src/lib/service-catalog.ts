@@ -1,6 +1,7 @@
 import type {
   ClientStage,
   InternalUserRole,
+  ServiceDefinition,
   ServiceDeliveryStage,
   ServiceId,
   ServiceSubservice,
@@ -9,7 +10,7 @@ import type {
   TeamMemberStatus,
 } from "@/lib/crm-types";
 
-export const serviceCatalog: { id: ServiceId; label: string; summary: string }[] = [
+export const serviceCatalog: ServiceDefinition[] = [
   { id: "websites-crm", label: "Websites e CRM", summary: "Plataformas, landing pages, CRM e automacoes base." },
   {
     id: "anuncios-trafego-organico",
@@ -92,12 +93,12 @@ export const taskPriorityLabels: Record<TaskPriority, string> = {
   baixa: "Baixa",
 };
 
-export function getServiceLabel(serviceId: ServiceId) {
-  return serviceCatalog.find((item) => item.id === serviceId)?.label ?? serviceId;
+export function getServiceLabel(serviceId: ServiceId, services: ServiceDefinition[] = serviceCatalog) {
+  return services.find((item) => item.id === serviceId)?.label ?? serviceId;
 }
 
-export function getServiceSummary(serviceId: ServiceId) {
-  return serviceCatalog.find((item) => item.id === serviceId)?.summary ?? "";
+export function getServiceSummary(serviceId: ServiceId, services: ServiceDefinition[] = serviceCatalog) {
+  return services.find((item) => item.id === serviceId)?.summary ?? "";
 }
 
 export function getSubservicesForService(serviceId: ServiceId, subservices: ServiceSubservice[]) {

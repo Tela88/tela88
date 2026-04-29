@@ -6,17 +6,18 @@ import { useMemo, useState } from "react";
 import {
   clientStageLabels,
   getServiceLabel,
-  serviceCatalog,
   serviceDeliveryStageLabels,
 } from "@/lib/service-catalog";
-import type { ClientRecord, ClientStage, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
+import type { ClientRecord, ClientStage, ServiceDefinition, ServiceDeliveryStage, ServiceId } from "@/lib/crm-types";
 
 export default function ClientManagementForm({
   client,
   canEdit,
+  services,
 }: {
   client: ClientRecord;
   canEdit: boolean;
+  services: ServiceDefinition[];
 }) {
   const router = useRouter();
   const [packName, setPackName] = useState(client.packName);
@@ -148,7 +149,7 @@ export default function ClientManagementForm({
               Servicos contratados
             </p>
             <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {serviceCatalog.map((service) => {
+              {services.map((service) => {
                 const active = selectedServices.includes(service.id);
                 return (
                   <button
@@ -269,7 +270,7 @@ export default function ClientManagementForm({
                 ) : (
                   groupedServices[stage].map((serviceId) => (
                     <div key={serviceId} className="border border-outline-variant/12 bg-surface p-4">
-                      <p className="font-headline text-lg font-bold text-on-surface">{getServiceLabel(serviceId)}</p>
+                      <p className="font-headline text-lg font-bold text-on-surface">{getServiceLabel(serviceId, services)}</p>
                       <select
                         value={serviceStages[serviceId] ?? "planeado"}
                         onChange={(event) => updateServiceStage(serviceId, event.target.value as ServiceDeliveryStage)}

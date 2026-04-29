@@ -13,6 +13,7 @@ import {
 import type {
   AuthenticatedUser,
   ClientRecord,
+  ServiceDefinition,
   ServiceId,
   ServiceSubservice,
   TaskPriority,
@@ -51,6 +52,7 @@ export default function TaskCardEditor({
   task,
   teamMembers,
   clients,
+  services,
   subservices,
   currentUser,
   compact = false,
@@ -58,6 +60,7 @@ export default function TaskCardEditor({
   task: TeamTask;
   teamMembers: TeamMember[];
   clients: ClientRecord[];
+  services: ServiceDefinition[];
   subservices: ServiceSubservice[];
   currentUser: AuthenticatedUser;
   compact?: boolean;
@@ -136,7 +139,7 @@ export default function TaskCardEditor({
 
   const compactPadding = compact ? "px-3 py-2.5" : "px-3.5 py-3";
   const linkedClientName = linkedClient ? linkedClient.company || linkedClient.name : "Sem cliente";
-  const serviceLabel = serviceId ? getServiceLabel(serviceId) : "Sem servico";
+  const serviceLabel = serviceId ? getServiceLabel(serviceId, services) : "Sem servico";
   const subserviceLabel = getSubserviceLabel(subServiceId, subservices) || "Sem sub-servico";
   const marginRuleActive =
     task.priorityMarginDays !== null && task.dueDate
@@ -291,7 +294,7 @@ export default function TaskCardEditor({
                         <option value="">Sem servico associado</option>
                         {availableServices.map((service) => (
                           <option key={service.id} value={service.id}>
-                            {getServiceLabel(service.id)}
+                            {getServiceLabel(service.id, services)}
                           </option>
                         ))}
                       </select>

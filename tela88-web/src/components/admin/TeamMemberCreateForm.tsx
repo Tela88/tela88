@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { getServiceLabel, internalUserRoleLabels, serviceCatalog, teamMemberStatusLabels } from "@/lib/service-catalog";
-import type { InternalUserRole, ServiceId, TeamMemberStatus } from "@/lib/crm-types";
+import { getServiceLabel, internalUserRoleLabels, teamMemberStatusLabels } from "@/lib/service-catalog";
+import type { InternalUserRole, ServiceDefinition, ServiceId, TeamMemberStatus } from "@/lib/crm-types";
 
-export default function TeamMemberCreateForm() {
+export default function TeamMemberCreateForm({ services }: { services: ServiceDefinition[] }) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -130,7 +130,7 @@ export default function TeamMemberCreateForm() {
             Servicos associados
           </p>
           <div className="mt-3 grid gap-2 md:grid-cols-2">
-            {serviceCatalog.map((service) => {
+            {services.map((service) => {
               const active = serviceIds.includes(service.id);
 
               return (
@@ -148,7 +148,7 @@ export default function TeamMemberCreateForm() {
                       : "border-outline-variant/20 bg-surface-container-low text-on-surface/72"
                   }`}
                 >
-                  {getServiceLabel(service.id)}
+                  {getServiceLabel(service.id, services)}
                 </button>
               );
             })}

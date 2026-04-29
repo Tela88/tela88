@@ -3,16 +3,18 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { getServiceLabel, getSubservicesForService, taskPriorityLabels } from "@/lib/service-catalog";
-import type { ClientRecord, ServiceId, ServiceSubservice, TaskPriority, TeamMember } from "@/lib/crm-types";
+import type { ClientRecord, ServiceDefinition, ServiceId, ServiceSubservice, TaskPriority, TeamMember } from "@/lib/crm-types";
 
 export default function TaskCreateForm({
   teamMembers,
   clients,
+  services,
   subservices,
   defaultClientId = "",
 }: {
   teamMembers: TeamMember[];
   clients: ClientRecord[];
+  services: ServiceDefinition[];
   subservices: ServiceSubservice[];
   defaultClientId?: string;
 }) {
@@ -121,7 +123,7 @@ export default function TaskCreateForm({
           <option value="">Serviço</option>
           {availableServices.map((service) => (
             <option key={service.id} value={service.id}>
-              {getServiceLabel(service.id)}
+              {getServiceLabel(service.id, services)}
             </option>
           ))}
         </select>

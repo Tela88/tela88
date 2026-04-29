@@ -25,6 +25,7 @@ import type {
   AuthenticatedUser,
   ClientRecord,
   ConsultationRequest,
+  ServiceDefinition,
   ServiceDeliveryStage,
   ServiceId,
   ServiceSubservice,
@@ -42,6 +43,7 @@ type AdminDashboardProps = {
   clients: ClientRecord[];
   teamMembers: TeamMember[];
   tasks: TeamTask[];
+  services: ServiceDefinition[];
   serviceSubservices: ServiceSubservice[];
   activeTab: DashboardTab;
   currentUser: AuthenticatedUser;
@@ -132,6 +134,7 @@ export default function AdminDashboard({
   clients,
   teamMembers,
   tasks,
+  services,
   serviceSubservices,
   activeTab,
   currentUser,
@@ -150,7 +153,7 @@ export default function AdminDashboard({
 
     const client = clients.find((item) => item.id === task.clientId);
     const assignee = teamMembers.find((item) => item.id === task.assigneeId);
-    const serviceLabel = task.serviceId ? getServiceLabel(task.serviceId) : "";
+    const serviceLabel = task.serviceId ? getServiceLabel(task.serviceId, services) : "";
     const subserviceLabel =
       task.subServiceId ? serviceSubservices.find((item) => item.id === task.subServiceId)?.name ?? "" : "";
 
@@ -181,7 +184,7 @@ export default function AdminDashboard({
         client.packName,
         client.packDescription,
         client.email,
-        client.services.map((service) => getServiceLabel(service.id)).join(" "),
+        client.services.map((service) => getServiceLabel(service.id, services)).join(" "),
       ]
         .filter(Boolean)
         .join(" "),
@@ -534,7 +537,7 @@ export default function AdminDashboard({
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <p className="font-headline text-lg font-bold text-on-surface">
-                                {getServiceLabel(service.id)}
+                                {getServiceLabel(service.id, services)}
                               </p>
                               <p className="mt-1 font-body text-sm text-on-surface/55">
                                 {service.client.company || service.client.name}
@@ -619,6 +622,7 @@ export default function AdminDashboard({
                                       task={task}
                                       teamMembers={teamMembers}
                                       clients={clients}
+                                      services={services}
                                       subservices={serviceSubservices}
                                       currentUser={currentUser}
                                     />
@@ -816,6 +820,7 @@ export default function AdminDashboard({
                         task={task}
                         teamMembers={teamMembers}
                         clients={clients}
+                        services={services}
                         subservices={serviceSubservices}
                         currentUser={currentUser}
                       />
@@ -838,6 +843,7 @@ export default function AdminDashboard({
                           task={task}
                           teamMembers={teamMembers}
                           clients={clients}
+                          services={services}
                           subservices={serviceSubservices}
                           currentUser={currentUser}
                           initiallyCollapsed
@@ -888,7 +894,7 @@ export default function AdminDashboard({
                           className="block border border-outline-variant/12 bg-surface p-4 transition-colors hover:border-primary-container"
                         >
                           <p className="font-headline text-lg font-bold text-on-surface">
-                            {getServiceLabel(service.id)}
+                            {getServiceLabel(service.id, services)}
                           </p>
                           <p className="mt-1 font-body text-sm text-on-surface/55">
                             {service.client.company || service.client.name}
@@ -962,7 +968,7 @@ export default function AdminDashboard({
                         >
                           <div className="flex items-start justify-between gap-3">
                             <p className="font-headline text-lg font-bold text-on-surface">
-                              {getServiceLabel(service.id)}
+                              {getServiceLabel(service.id, services)}
                             </p>
                             <span className="shrink-0 border border-primary-container/20 px-2 py-1 font-label text-[10px] uppercase tracking-[0.16em] text-primary-container">
                               {service.activeTasks.length} tarefas
@@ -982,7 +988,7 @@ export default function AdminDashboard({
               ))}
             </div>
 
-            <ServiceSubservicePanel subservices={serviceSubservices} isAdmin={isAdmin} />
+            <ServiceSubservicePanel services={services} subservices={serviceSubservices} isAdmin={isAdmin} />
           </div>
         ) : null}
 
@@ -1000,7 +1006,7 @@ export default function AdminDashboard({
                   <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
                     Arrasta entre Planeamento e Em producao
                   </span>
-                  {isAdmin ? <ManualClientCreateModal /> : null}
+                  {isAdmin ? <ManualClientCreateModal services={services} /> : null}
                 </div>
               </div>
 
@@ -1102,7 +1108,7 @@ export default function AdminDashboard({
                     <div>
                       <p className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">Servicos</p>
                       <p className="mt-2 font-body text-sm text-on-surface/70">
-                        {client.services.length > 0 ? client.services.map((service) => getServiceLabel(service.id)).join(", ") : "Por definir"}
+                        {client.services.length > 0 ? client.services.map((service) => getServiceLabel(service.id, services)).join(", ") : "Por definir"}
                       </p>
                     </div>
                   </Link>
@@ -1156,7 +1162,7 @@ export default function AdminDashboard({
             </div>
 
             <div className="grid gap-4 xl:grid-cols-[minmax(320px,0.42fr)_minmax(0,1fr)]">
-              <TeamMemberCreateForm />
+              <TeamMemberCreateForm services={services} />
 
               <div className="border border-outline-variant/15 bg-surface-container-low p-6">
                 <div className="mb-5 flex items-center justify-between">
@@ -1254,7 +1260,7 @@ export default function AdminDashboard({
                                   key={`service-chip-${member.id}-${serviceId}`}
                                   className="border border-primary-container/18 bg-primary-container/8 px-2 py-1 font-body text-xs text-primary-container"
                                 >
-                                  {getServiceLabel(serviceId)}
+                                  {getServiceLabel(serviceId, services)}
                                 </span>
                               ))
                             )}
@@ -1286,6 +1292,7 @@ export default function AdminDashboard({
                     key={`professional-${member.id}`}
                     member={member}
                     tasks={tasks}
+                    services={services}
                     isAdmin={canManageProfessionals}
                   />
                 ))}
@@ -1297,7 +1304,7 @@ export default function AdminDashboard({
         {activeTab === "tasks" ? (
           <div className="space-y-8">
             <div className="grid gap-4 xl:grid-cols-1">
-              <TaskCreateForm teamMembers={teamMembers} clients={clients} subservices={serviceSubservices} />
+              <TaskCreateForm teamMembers={teamMembers} clients={clients} services={services} subservices={serviceSubservices} />
             </div>
 
             <div>
@@ -1355,6 +1362,7 @@ export default function AdminDashboard({
                                 task={task}
                                 teamMembers={teamMembers}
                                 clients={clients}
+                                services={services}
                                 subservices={serviceSubservices}
                                 currentUser={currentUser}
                               />
