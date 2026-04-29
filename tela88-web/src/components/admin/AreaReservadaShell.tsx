@@ -61,7 +61,15 @@ export default function AreaReservadaShell({
       <div className="xl:min-h-screen">
         <div className="border-b border-outline-variant/12 bg-surface-container-low px-6 py-4 xl:hidden">
           <p className="font-label text-[10px] uppercase tracking-[0.22em] text-primary-container">Tela 88</p>
-          <p className="mt-2 font-headline text-lg font-bold text-on-surface">Admin Dashboard</p>
+          <div className="mt-2 flex items-center justify-between gap-4">
+            <p className="font-headline text-lg font-bold text-on-surface">Admin Dashboard</p>
+            <Link
+              href="/"
+              className="shrink-0 border border-primary-container/30 bg-primary-container/8 px-3 py-2 font-headline text-[11px] font-bold uppercase tracking-[0.14em] text-primary-container"
+            >
+              Ver site
+            </Link>
+          </div>
           <div className="mt-4 overflow-x-auto">
             <div className="flex gap-2 pb-2">
               {mobileNavItems.map(([tab, label]) => (

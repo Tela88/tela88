@@ -65,6 +65,18 @@ export default function AdminSidebar({ initialUser }: { initialUser: Authenticat
         </div>
       ) : null}
 
+      <div className="mt-5">
+        <Link
+          href="/"
+          className="flex items-center justify-between border border-primary-container/30 bg-primary-container/8 px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.14em] text-primary-container transition-colors hover:bg-primary-container hover:text-on-primary"
+        >
+          <span>Ver site</span>
+          <span aria-hidden="true" className="text-base leading-none">
+            ↗
+          </span>
+        </Link>
+      </div>
+
       <nav className="mt-6 space-y-2">
         {visibleItems.map((item) => {
           const active = !isClientPage && currentTab === item.id;
