@@ -19,6 +19,12 @@ type InternalUserRow = {
   password_hash: string;
 };
 
+type SessionUser = {
+  id: string;
+  username: string;
+  role: InternalUserRole;
+};
+
 function getSessionSecret() {
   return process.env.TELA88_SESSION_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? "dev-session-secret-change-me";
 }
@@ -67,6 +73,14 @@ function mapUser(row: InternalUserRow): AuthenticatedUser {
   };
 }
 
+function toSessionUser(user: AuthenticatedUser): SessionUser {
+  return {
+    id: user.id,
+    username: user.username,
+    role: user.role,
+  };
+}
+
 export async function validateUserCredentials(username: string, password: string) {
   const user = await selectSingle<InternalUserRow>("internal_users", {
     filters: { username },
@@ -82,7 +96,7 @@ export async function validateUserCredentials(username: string, password: string
 export function createSessionToken(user: AuthenticatedUser) {
   const secret = getSessionSecret();
   const payload = encodePayload({
-    user,
+    user: toSessionUser(user),
     expiresAt: Date.now() + 1000 * 60 * 60 * 24 * 7,
   });
   const signature = createSignature(payload, secret);
@@ -106,7 +120,7 @@ export function verifySessionToken(token: string | undefined) {
   if (!timingSafeEqual(provided, expectedBuffer)) return null;
 
   try {
-    const decoded = decodePayload<{ user: AuthenticatedUser; expiresAt: number }>(payload);
+    const decoded = decodePayload<{ user: SessionUser; expiresAt: number }>(payload);
 
     if (decoded.expiresAt < Date.now()) return null;
     return decoded.user;
@@ -118,8 +132,16 @@ export function verifySessionToken(token: string | undefined) {
 export async function getAuthenticatedAdmin() {
   const cookieStore = await cookies();
   const token = cookieStore.get(sessionCookieName)?.value;
+  const sessionUser = verifySessionToken(token);
+  if (!sessionUser) return null;
 
-  return verifySessionToken(token);
+  const user = await selectSingle<InternalUserRow>("internal_users", {
+    filters: { id: sessionUser.id },
+  });
+
+  if (!user) return null;
+
+  return mapUser(user);
 }
 
 export function getSessionCookieName() {
