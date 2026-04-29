@@ -84,6 +84,14 @@ function formatDate(value: string) {
   }).format(new Date(value));
 }
 
+function normalizeSearch(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 function DropColumn({
   zoneId,
   activeDropZone,
@@ -127,11 +135,63 @@ export default function AdminDashboard({
 }: AdminDashboardProps) {
   const router = useRouter();
   const [activeDropZone, setActiveDropZone] = useState<string | null>(null);
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
   const isAdmin = currentUser.role === "admin";
   const canManageProfessionals = currentUser.role === "admin" || currentUser.role === "secretaria";
+  const normalizedTaskSearch = normalizeSearch(taskSearchQuery);
+  const normalizedClientSearch = normalizeSearch(clientSearchQuery);
+
+  function taskMatchesSearch(task: TeamTask) {
+    if (!normalizedTaskSearch) return true;
+
+    const client = clients.find((item) => item.id === task.clientId);
+    const assignee = teamMembers.find((item) => item.id === task.assigneeId);
+    const serviceLabel = task.serviceId ? getServiceLabel(task.serviceId) : "";
+    const subserviceLabel =
+      task.subServiceId ? serviceSubservices.find((item) => item.id === task.subServiceId)?.name ?? "" : "";
+
+    const haystack = normalizeSearch(
+      [
+        task.title,
+        task.description,
+        client?.company,
+        client?.name,
+        assignee?.name,
+        serviceLabel,
+        subserviceLabel,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+
+    return haystack.includes(normalizedTaskSearch);
+  }
+
+  function clientMatchesSearch(client: ClientRecord) {
+    if (!normalizedClientSearch) return true;
+
+    const haystack = normalizeSearch(
+      [
+        client.company,
+        client.name,
+        client.packName,
+        client.packDescription,
+        client.email,
+        client.services.map((service) => getServiceLabel(service.id)).join(" "),
+      ]
+        .filter(Boolean)
+        .join(" "),
+    );
+
+    return haystack.includes(normalizedClientSearch);
+  }
 
   const clientsInProcess = clients.filter((item) => item.clientStage === "planeamento");
   const clientsInProduction = clients.filter((item) => item.clientStage === "em-producao");
+  const filteredClientsInProcess = clientsInProcess.filter(clientMatchesSearch);
+  const filteredClientsInProduction = clientsInProduction.filter(clientMatchesSearch);
+  const filteredClients = clients.filter(clientMatchesSearch);
   const totalServicesActive = clients.reduce((accumulator, client) => accumulator + client.services.length, 0);
   const openTasks = tasks.filter((task) => task.status !== "feito");
   const tasksInPlanning = tasks.filter((task) => task.status === "planeamento");
@@ -164,12 +224,13 @@ export default function AdminDashboard({
     "em-producao": serviceWorkItems.filter((service) => service.stage === "em-producao"),
     concluido: serviceWorkItems.filter((service) => service.stage === "concluido"),
   };
+  const filteredTasks = tasks.filter(taskMatchesSearch);
   const tasksByStatus = {
-    hoje: sortTasksByPriority(tasks.filter((task) => task.status === "hoje")),
-    planeamento: sortTasksByPriority(tasks.filter((task) => task.status === "planeamento")),
-    "em-producao": sortTasksByPriority(tasks.filter((task) => task.status === "em-producao")),
-    "em-revisao": sortTasksByPriority(tasks.filter((task) => task.status === "em-revisao")),
-    feito: sortTasksByPriority(tasks.filter((task) => task.status === "feito")),
+    hoje: sortTasksByPriority(filteredTasks.filter((task) => task.status === "hoje")),
+    planeamento: sortTasksByPriority(filteredTasks.filter((task) => task.status === "planeamento")),
+    "em-producao": sortTasksByPriority(filteredTasks.filter((task) => task.status === "em-producao")),
+    "em-revisao": sortTasksByPriority(filteredTasks.filter((task) => task.status === "em-revisao")),
+    feito: sortTasksByPriority(filteredTasks.filter((task) => task.status === "feito")),
   };
 
   function dragStart(payload: DragPayload) {
@@ -491,15 +552,28 @@ export default function AdminDashboard({
               </div>
 
               <div className="border border-outline-variant/15 bg-surface-container-low p-6">
-                <div className="mb-5 flex items-center justify-between">
-                  <h3 className="font-headline text-2xl font-bold text-on-surface">Todas as tarefas</h3>
-                  <span className="font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
-                    Edicao total
-                  </span>
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-headline text-2xl font-bold text-on-surface">Todas as tarefas</h3>
+                    <span className="mt-2 block font-label text-[10px] uppercase tracking-[0.2em] text-primary-container">
+                      Edicao total
+                    </span>
+                  </div>
+                  <div className="w-full max-w-md">
+                    <input
+                      type="search"
+                      value={taskSearchQuery}
+                      onChange={(event) => setTaskSearchQuery(event.target.value)}
+                      placeholder="Pesquisar tarefas, cliente, servico ou colaborador"
+                      className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface/35 focus:border-primary-container"
+                    />
+                  </div>
                 </div>
-                {tasks.length === 0 ? (
+                {filteredTasks.length === 0 ? (
                   <div className="border border-dashed border-outline-variant/15 px-4 py-8 text-center">
-                    <p className="font-body text-sm text-on-surface/45">Ainda nao existem tarefas registadas.</p>
+                    <p className="font-body text-sm text-on-surface/45">
+                      Nao ha tarefas que correspondam a esta pesquisa.
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -927,10 +1001,20 @@ export default function AdminDashboard({
                 </div>
               </div>
 
+              <div className="mb-5 max-w-md">
+                <input
+                  type="search"
+                  value={clientSearchQuery}
+                  onChange={(event) => setClientSearchQuery(event.target.value)}
+                  placeholder="Pesquisar cliente, pack ou servico"
+                  className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface/35 focus:border-primary-container"
+                />
+              </div>
+
               <div className="grid gap-4 xl:grid-cols-2">
                 {[
-                  { key: "planeamento", label: "Planeamento", items: clientsInProcess },
-                  { key: "em-producao", label: "Em producao", items: clientsInProduction },
+                  { key: "planeamento", label: "Planeamento", items: filteredClientsInProcess },
+                  { key: "em-producao", label: "Em producao", items: filteredClientsInProduction },
                 ].map((column) => {
                   const zoneId = `client-${column.key}`;
 
@@ -979,15 +1063,26 @@ export default function AdminDashboard({
             </div>
 
             <div>
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-headline text-3xl font-bold text-on-surface">Base de clientes</h2>
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                  Gestao individual
-                </span>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">Base de clientes</h2>
+                  <span className="mt-2 block font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    Gestao individual
+                  </span>
+                </div>
+                <div className="w-full max-w-md">
+                  <input
+                    type="search"
+                    value={clientSearchQuery}
+                    onChange={(event) => setClientSearchQuery(event.target.value)}
+                    placeholder="Pesquisar cliente, pack ou servico"
+                    className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface/35 focus:border-primary-container"
+                  />
+                </div>
               </div>
 
               <div className="space-y-4">
-                {clients.map((client) => (
+                {filteredClients.map((client) => (
                   <Link
                     key={client.id}
                     href={`/area-reservada/clientes/${client.id}`}
@@ -1009,6 +1104,13 @@ export default function AdminDashboard({
                     </div>
                   </Link>
                 ))}
+                {filteredClients.length === 0 ? (
+                  <div className="border border-dashed border-outline-variant/15 px-4 py-8 text-center">
+                    <p className="font-body text-sm text-on-surface/45">
+                      Nao ha clientes que correspondam a esta pesquisa.
+                    </p>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -1196,11 +1298,22 @@ export default function AdminDashboard({
             </div>
 
             <div>
-              <div className="mb-5 flex items-center justify-between">
-                <h2 className="font-headline text-3xl font-bold text-on-surface">Tarefas diarias</h2>
-                <span className="font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
-                  Arrasta entre Hoje, Planeamento, Produção, Revisão e Feito
-                </span>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-headline text-3xl font-bold text-on-surface">Tarefas diarias</h2>
+                  <span className="mt-2 block font-label text-[10px] uppercase tracking-[0.2em] text-on-surface/35">
+                    Arrasta entre Hoje, Planeamento, Produção, Revisão e Feito
+                  </span>
+                </div>
+                <div className="w-full max-w-md">
+                  <input
+                    type="search"
+                    value={taskSearchQuery}
+                    onChange={(event) => setTaskSearchQuery(event.target.value)}
+                    placeholder="Pesquisar tarefas, cliente, servico ou colaborador"
+                    className="w-full border border-outline-variant/20 bg-surface px-4 py-3 font-body text-sm text-on-surface outline-none transition-colors placeholder:text-on-surface/35 focus:border-primary-container"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-4 xl:grid-cols-5">
