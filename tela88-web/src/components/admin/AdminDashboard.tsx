@@ -92,6 +92,9 @@ function normalizeSearch(value: string) {
     .trim();
 }
 
+const cardScrollThreeClass = "max-h-[26rem] overflow-y-auto pr-1";
+const cardScrollThreeCompactClass = "max-h-[22rem] overflow-y-auto pr-1";
+
 function DropColumn({
   zoneId,
   activeDropZone,
@@ -406,7 +409,7 @@ export default function AdminDashboard({
                     Ver todos
                   </Link>
                 </div>
-                <div className="space-y-3">
+                <div className={`space-y-3 ${cardScrollThreeClass}`}>
                   {pendingRequests.slice(0, 3).map((request) => (
                     <div key={request.id} className="border border-outline-variant/12 bg-surface p-4">
                       <p className="font-headline text-lg font-bold text-on-surface">{request.name}</p>
@@ -425,7 +428,7 @@ export default function AdminDashboard({
                     Ver quadro
                   </Link>
                 </div>
-                <div className="space-y-3">
+                <div className={`space-y-3 ${cardScrollThreeClass}`}>
                   {teamMembers.map((member) => {
                     const activeTasks = tasks.filter(
                       (task) => task.assigneeId === member.id && task.status !== "feito",
@@ -458,7 +461,7 @@ export default function AdminDashboard({
                     Ver todos
                   </Link>
                 </div>
-                <div className="space-y-3">
+                <div className={`space-y-3 ${cardScrollThreeClass}`}>
                   {clients.slice(0, 3).map((client) => (
                     <Link
                       key={client.id}
@@ -485,7 +488,7 @@ export default function AdminDashboard({
                       Abrir base
                     </Link>
                   </div>
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${cardScrollThreeClass}`}>
                     {clients.map((client) => (
                       <Link
                         key={`overview-client-${client.id}`}
@@ -516,7 +519,7 @@ export default function AdminDashboard({
                       Gerir servicos
                     </Link>
                   </div>
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${cardScrollThreeClass}`}>
                     {serviceWorkItems.length === 0 ? (
                       <div className="border border-dashed border-outline-variant/15 px-4 py-8 text-center">
                         <p className="font-body text-sm text-on-surface/45">Sem servicos ativos neste momento.</p>
@@ -599,7 +602,7 @@ export default function AdminDashboard({
                               </span>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className={`space-y-3 ${cardScrollThreeCompactClass}`}>
                               {tasksByStatus[statusKey].length === 0 ? (
                                 <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                                   <p className="font-body text-xs text-on-surface/45">Larga aqui uma tarefa.</p>
@@ -713,7 +716,7 @@ export default function AdminDashboard({
                         {String(column.items.length).padStart(2, "0")}
                       </span>
                     </div>
-                    <div className="space-y-3">
+                    <div className={`space-y-3 ${cardScrollThreeClass}`}>
                       {column.items.length === 0 ? (
                         <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                           <p className="font-body text-xs text-on-surface/45">Larga aqui um cartao.</p>
@@ -850,7 +853,7 @@ export default function AdminDashboard({
 
                 <div className="border border-outline-variant/15 bg-surface-container-low p-5">
                   <h3 className="font-headline text-2xl font-bold text-on-surface">Clientes ligados</h3>
-                  <div className="mt-4 space-y-3">
+                  <div className={`mt-4 space-y-3 ${cardScrollThreeClass}`}>
                     {myClients.length === 0 ? (
                       <p className="font-body text-sm text-on-surface/45">Sem clientes associados por tarefa.</p>
                     ) : (
@@ -874,7 +877,7 @@ export default function AdminDashboard({
 
                 <div className="border border-outline-variant/15 bg-surface-container-low p-5">
                   <h3 className="font-headline text-2xl font-bold text-on-surface">Servicos ligados</h3>
-                  <div className="mt-4 space-y-3">
+                  <div className={`mt-4 space-y-3 ${cardScrollThreeClass}`}>
                     {myServices.length === 0 ? (
                       <p className="font-body text-sm text-on-surface/45">Sem servicos associados por tarefa.</p>
                     ) : (
@@ -945,7 +948,7 @@ export default function AdminDashboard({
                     </span>
                   </div>
 
-                  <div className="space-y-3">
+                  <div className={`space-y-3 ${cardScrollThreeClass}`}>
                     {servicesByStage[stage].length === 0 ? (
                       <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                         <p className="font-body text-xs text-on-surface/45">Sem servicos nesta fase.</p>
@@ -1033,7 +1036,7 @@ export default function AdminDashboard({
                           {String(column.items.length).padStart(2, "0")}
                         </span>
                       </div>
-                      <div className="space-y-3">
+                      <div className={`space-y-3 ${cardScrollThreeClass}`}>
                         {column.items.length === 0 ? (
                           <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                             <p className="font-body text-xs text-on-surface/45">Larga aqui um cliente.</p>
@@ -1081,7 +1084,7 @@ export default function AdminDashboard({
                 </div>
               </div>
 
-              <div className="space-y-4">
+              <div className={`space-y-4 ${cardScrollThreeClass}`}>
                 {filteredClients.map((client) => (
                   <Link
                     key={client.id}
@@ -1173,7 +1176,7 @@ export default function AdminDashboard({
                       </span>
                     </div>
 
-                    <div className="mt-4 space-y-3">
+                    <div className={`mt-4 space-y-3 ${cardScrollThreeClass}`}>
                       {teamMembers.map((member) => (
                         <div
                           key={`account-panel-${member.id}`}
@@ -1224,7 +1227,7 @@ export default function AdminDashboard({
                       </span>
                     </div>
 
-                    <div className="mt-4 space-y-3">
+                    <div className={`mt-4 space-y-3 ${cardScrollThreeClass}`}>
                       {teamMembers.map((member) => (
                         <div
                           key={`service-panel-${member.id}`}
@@ -1335,7 +1338,7 @@ export default function AdminDashboard({
                           {String(tasksByStatus[statusKey].length).padStart(2, "0")}
                         </span>
                       </div>
-                      <div className="space-y-3">
+                      <div className={`space-y-3 ${cardScrollThreeClass}`}>
                         {tasksByStatus[statusKey].length === 0 ? (
                           <div className="border border-dashed border-outline-variant/15 px-4 py-6 text-center">
                             <p className="font-body text-xs text-on-surface/45">Larga aqui uma tarefa.</p>
