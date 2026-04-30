@@ -3,6 +3,19 @@ import { assertAdminActionRequest } from "@/lib/auth";
 import { createTask } from "@/lib/crm-store";
 import type { ServiceId, TaskPriority, TaskStatus } from "@/lib/crm-types";
 
+function isPastDueDate(value: string | null | undefined) {
+  if (!value) return false;
+
+  const datePart = value.slice(0, 10);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+    return false;
+  }
+
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return datePart < today;
+}
+
 export async function POST(request: Request) {
   const { errorResponse } = await assertAdminActionRequest(request);
   if (errorResponse) return errorResponse;
@@ -24,6 +37,10 @@ export async function POST(request: Request) {
 
   if (!payload?.title?.trim() || !payload.assigneeId) {
     return NextResponse.json({ error: "Preenche titulo e responsavel." }, { status: 400 });
+  }
+
+  if (isPastDueDate(payload?.dueDate)) {
+    return NextResponse.json({ error: "O prazo tem de ser hoje ou uma data futura." }, { status: 400 });
   }
 
   try {

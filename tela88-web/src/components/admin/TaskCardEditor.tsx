@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   getServiceLabel,
-  getSubserviceLabel,
   getSubservicesForService,
   taskPriorityLabels,
   taskStatusLabels,
@@ -22,6 +21,14 @@ import type {
   TeamTask,
 } from "@/lib/crm-types";
 
+function getTodayDateInputValue() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 function getPriorityClasses(priority: TaskPriority) {
   if (priority === "alta") {
     return "border-[#ff5a5a]/35 bg-[#221314] text-[#ff7c7c]";
@@ -37,15 +44,6 @@ function getPriorityClasses(priority: TaskPriority) {
 function formatCompactDate(value: string | null) {
   if (!value) return "Sem data";
   return value.replace(/-/g, ".");
-}
-
-function ReadOnlyField({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border border-outline-variant/12 bg-surface-container-low px-3 py-3">
-      <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">{label}</p>
-      <p className="mt-2 text-sm text-on-surface">{value}</p>
-    </div>
-  );
 }
 
 export default function TaskCardEditor({
@@ -88,6 +86,7 @@ export default function TaskCardEditor({
     () => (serviceId ? getSubservicesForService(serviceId, subservices) : []),
     [serviceId, subservices],
   );
+  const minDueDate = getTodayDateInputValue();
 
   async function handleSave() {
     setSaving(true);
@@ -97,22 +96,19 @@ export default function TaskCardEditor({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(
-        isAdmin
-          ? {
-              status,
-              priority,
-              priorityMarginDays:
-                priorityMarginDays.trim() === "" ? null : Math.max(0, Number.parseInt(priorityMarginDays, 10) || 0),
-              assigneeId,
-              dueDate: dueDate || null,
-              serviceId: serviceId || null,
-              subServiceId: subServiceId || null,
-            }
-          : {
-              status,
-            },
-      ),
+      body: JSON.stringify({
+        status,
+        priority,
+        priorityMarginDays: isAdmin
+          ? priorityMarginDays.trim() === ""
+            ? null
+            : Math.max(0, Number.parseInt(priorityMarginDays, 10) || 0)
+          : undefined,
+        assigneeId,
+        dueDate: dueDate || null,
+        serviceId: serviceId || null,
+        subServiceId: subServiceId || null,
+      }),
     });
 
     setSaving(false);
@@ -139,8 +135,6 @@ export default function TaskCardEditor({
 
   const compactPadding = compact ? "px-3 py-2.5" : "px-3.5 py-3";
   const linkedClientName = linkedClient ? linkedClient.company || linkedClient.name : "Sem cliente";
-  const serviceLabel = serviceId ? getServiceLabel(serviceId, services) : "Sem servico";
-  const subserviceLabel = getSubserviceLabel(subServiceId, subservices) || "Sem sub-servico";
   const marginRuleActive =
     task.priorityMarginDays !== null && task.dueDate
       ? `Passa para Alta a ${task.priorityMarginDays} dias do prazo`
@@ -219,51 +213,51 @@ export default function TaskCardEditor({
               </div>
             ) : null}
 
-            {isAdmin && marginRuleActive ? (
-              <div className="mb-5 border border-primary-container/14 bg-primary-container/6 px-4 py-3">
-                <p className="font-body text-sm text-primary-container">{marginRuleActive}</p>
-              </div>
-            ) : null}
+            <>
+              {isAdmin && marginRuleActive ? (
+                <div className="mb-5 border border-primary-container/14 bg-primary-container/6 px-4 py-3">
+                  <p className="font-body text-sm text-primary-container">{marginRuleActive}</p>
+                </div>
+              ) : null}
 
-            {isAdmin ? (
-              <>
-                <div className="grid gap-3">
-                  <select
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value as TaskStatus)}
-                    className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                  >
-                    {Object.entries(taskStatusLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+              <div className="grid gap-3">
+                <select
+                  value={status}
+                  onChange={(event) => setStatus(event.target.value as TaskStatus)}
+                  className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                >
+                  {Object.entries(taskStatusLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
 
-                  <select
-                    value={priority}
-                    onChange={(event) => setPriority(event.target.value as TaskPriority)}
-                    className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                  >
-                    {Object.entries(taskPriorityLabels).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                <select
+                  value={priority}
+                  onChange={(event) => setPriority(event.target.value as TaskPriority)}
+                  className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                >
+                  {Object.entries(taskPriorityLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
 
-                  <select
-                    value={assigneeId}
-                    onChange={(event) => setAssigneeId(event.target.value)}
-                    className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                  >
-                    {teamMembers.map((member) => (
-                      <option key={member.id} value={member.id}>
-                        {member.name}
-                      </option>
-                    ))}
-                  </select>
+                <select
+                  value={assigneeId}
+                  onChange={(event) => setAssigneeId(event.target.value)}
+                  className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                >
+                  {teamMembers.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name}
+                    </option>
+                  ))}
+                </select>
 
+                {isAdmin ? (
                   <input
                     type="number"
                     min="0"
@@ -273,50 +267,53 @@ export default function TaskCardEditor({
                     placeholder="Margem Prioritaria (dias)"
                     className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
                   />
+                ) : null}
 
-                  <input
-                    type="date"
-                    value={dueDate}
-                    onChange={(event) => setDueDate(event.target.value)}
-                    className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                  />
+                <input
+                  type="date"
+                  min={minDueDate}
+                  value={dueDate}
+                  onChange={(event) => setDueDate(event.target.value)}
+                  className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                />
 
-                  {linkedClient ? (
-                    <>
-                      <select
-                        value={serviceId}
-                        onChange={(event) => {
-                          setServiceId(event.target.value as ServiceId | "");
-                          setSubServiceId("");
-                        }}
-                        className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                      >
-                        <option value="">Sem servico associado</option>
-                        {availableServices.map((service) => (
-                          <option key={service.id} value={service.id}>
-                            {getServiceLabel(service.id, services)}
-                          </option>
-                        ))}
-                      </select>
+                {linkedClient ? (
+                  <>
+                    <select
+                      value={serviceId}
+                      onChange={(event) => {
+                        setServiceId(event.target.value as ServiceId | "");
+                        setSubServiceId("");
+                      }}
+                      className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
+                    >
+                      <option value="">Sem servico associado</option>
+                      {availableServices.map((service) => (
+                        <option key={service.id} value={service.id}>
+                          {getServiceLabel(service.id, services)}
+                        </option>
+                      ))}
+                    </select>
 
-                      <select
-                        value={subServiceId}
-                        onChange={(event) => setSubServiceId(event.target.value)}
-                        disabled={!serviceId}
-                        className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
-                      >
-                        <option value="">Sem sub-servico</option>
-                        {availableSubservices.map((subservice) => (
-                          <option key={subservice.id} value={subservice.id}>
-                            {subservice.name}
-                          </option>
-                        ))}
-                      </select>
-                    </>
-                  ) : null}
-                </div>
+                    <select
+                      value={subServiceId}
+                      onChange={(event) => setSubServiceId(event.target.value)}
+                      disabled={!serviceId}
+                      className="w-full border border-outline-variant/20 bg-surface-container-low px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container disabled:opacity-60"
+                    >
+                      <option value="">Sem sub-servico</option>
+                      {availableSubservices.map((subservice) => (
+                        <option key={subservice.id} value={subservice.id}>
+                          {subservice.name}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                ) : null}
+              </div>
 
-                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className={`mt-5 grid gap-3 ${isAdmin ? "sm:grid-cols-2" : "sm:grid-cols-1"}`}>
+                {isAdmin ? (
                   <button
                     type="button"
                     onClick={handleDelete}
@@ -325,54 +322,18 @@ export default function TaskCardEditor({
                   >
                     {deleting ? "A eliminar..." : "Eliminar"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleSave}
-                    disabled={saving || deleting}
-                    className="bg-primary-container px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    {saving ? "A guardar..." : "Guardar tarefa"}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="border border-outline-variant/12 bg-surface-container-low p-4">
-                  <p className="font-label text-[10px] uppercase tracking-[0.18em] text-on-surface/35">Estado da tarefa</p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-                    <select
-                      value={status}
-                      onChange={(event) => setStatus(event.target.value as TaskStatus)}
-                      className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
-                    >
-                      {Object.entries(taskStatusLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
-                    </select>
+                ) : null}
 
-                    <button
-                      type="button"
-                      onClick={handleSave}
-                      disabled={saving}
-                      className="bg-primary-container px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {saving ? "A guardar..." : "Guardar estado"}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <ReadOnlyField label="Prioridade" value={taskPriorityLabels[task.priority]} />
-                  <ReadOnlyField label="Colaborador" value={assignedMember?.name ?? "Sem colaborador"} />
-                  <ReadOnlyField label="Prazo" value={formatCompactDate(task.dueDate)} />
-                  <ReadOnlyField label="Servico" value={serviceLabel} />
-                  <ReadOnlyField label="Sub-servico" value={subserviceLabel} />
-                  <ReadOnlyField label="Estado atual" value={taskStatusLabels[task.status]} />
-                </div>
-              </>
-            )}
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving || deleting}
+                  className="bg-primary-container px-4 py-3 font-headline text-sm font-bold uppercase tracking-[0.18em] text-on-primary disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {saving ? "A guardar..." : "Guardar tarefa"}
+                </button>
+              </div>
+            </>
           </div>
         </div>
       ) : null}

@@ -5,6 +5,14 @@ import { useMemo, useState } from "react";
 import { getServiceLabel, getSubservicesForService, taskPriorityLabels } from "@/lib/service-catalog";
 import type { ClientRecord, ServiceDefinition, ServiceId, ServiceSubservice, TaskPriority, TeamMember } from "@/lib/crm-types";
 
+function getTodayDateInputValue() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export default function TaskCreateForm({
   teamMembers,
   clients,
@@ -29,6 +37,7 @@ export default function TaskCreateForm({
   const [priority, setPriority] = useState<TaskPriority>("media");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const minDueDate = getTodayDateInputValue();
 
   const selectedClient = useMemo(
     () => clients.find((client) => client.id === clientId) ?? null,
@@ -157,6 +166,7 @@ export default function TaskCreateForm({
 
         <input
           type="date"
+          min={minDueDate}
           value={dueDate}
           onChange={(event) => setDueDate(event.target.value)}
           className="w-full border border-outline-variant/20 bg-surface px-3 py-3 font-body text-sm text-on-surface outline-none focus:border-primary-container"
